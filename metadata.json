@@ -1,6 +1,6 @@
 {
-  "name": "Lombenax AI",
-  "description": "Lombenax AI - یاریدەدەرێکی زیرەکی کۆمپانیای لۆجیستیکی Lombenax لە عێراق",
+  "name": "Gateway AI",
+  "description": "Gateway AI - یاریدەدەرێکی زیرەکی کۆمپانیای لۆجیستیکی Iraq-Digital-Gateway لە عێراق",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
