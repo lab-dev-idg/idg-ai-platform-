@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Sparkles } from 'lucide-react';
-import { useLanguage } from '@/lib/LanguageContext';
+import { useSettingsStore } from '@/store/settingsStore';
 import { CurrencyConverter } from '@/features/currency';
 import { ShippingCalculator } from './ShippingCalculator';
 import { KYCForm } from './KYCForm';
@@ -9,7 +9,7 @@ import { ShipmentTracker } from './ShipmentTracker';
 import { LogisticsMap } from './LogisticsMap';
 
 export function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
-  const { t } = useLanguage();
+  const { t } = useSettingsStore();
 
   return (
     <aside className={`${isMobile ? 'flex' : 'hidden lg:flex'} flex-col gap-5 lg:col-span-3 bg-[#071739] sidebar-dark rounded-[32px] p-5 lg:h-full lg:overflow-hidden`}>

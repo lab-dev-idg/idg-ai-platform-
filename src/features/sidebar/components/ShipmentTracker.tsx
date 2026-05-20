@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Input } from '@/shared/ui/input';
+import { Button } from '@/shared/ui/button';
 import { Package, Search, Truck, CheckCircle2, Factory, Clock, History, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '@/app/providers/AuthProvider';
-import { db, collection, query, serverTimestamp, orderBy, doc, setDoc, onSnapshot } from '@/services/firebase';
-import { useLanguage } from '@/lib/LanguageContext';
+import { useAuthStore } from '@/store/authStore';
+import { subscribeToQuery } from '@/services/firebase/listeners/sharedListener';
+import { db, collection, query, serverTimestamp, orderBy, doc, setDoc } from '@/services/firebase';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface Milestone {
   status: string;
@@ -45,8 +46,8 @@ const MOCK_SHIPMENTS: Record<string, ShipmentData> = {
 };
 
 export function ShipmentTracker() {
-  const { t } = useLanguage();
-  const { user } = useAuth();
+  const { t } = useSettingsStore();
+  const { user } = useAuthStore();
   const [trackingId, setTrackingId] = useState('');
   const [shipment, setShipment] = useState<ShipmentData | null>(null);
   const [history, setHistory] = useState<ShipmentData[]>([]);
@@ -62,13 +63,11 @@ export function ShipmentTracker() {
       orderBy('updatedAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot: any) => {
-      const historyData = snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ShipmentData[];
-      setHistory(historyData);
-    });
+    const unsubscribe = subscribeToQuery<ShipmentData>(
+      `shipments_${user.uid}`,
+      q,
+      (historyData) => setHistory(historyData)
+    );
 
     return () => unsubscribe();
   }, [user]);

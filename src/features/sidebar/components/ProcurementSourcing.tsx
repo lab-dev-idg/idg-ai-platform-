@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { ShoppingBag, Send, History, Package, DollarSign, PlusCircle, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
+import { Textarea } from '@/shared/ui/textarea';
+import { Button } from '@/shared/ui/button';
 import { toast } from 'sonner';
-import { useLanguage } from '@/lib/LanguageContext';
+import { useSettingsStore } from '@/store/settingsStore';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function ProcurementSourcing() {
-  const { t } = useLanguage();
+  const { t } = useSettingsStore();
   const [showHistory, setShowHistory] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   

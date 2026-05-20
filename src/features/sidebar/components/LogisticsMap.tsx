@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { MapPin, AlertCircle } from 'lucide-react';
 import { 
   APIProvider, 
@@ -12,9 +12,9 @@ import {
 
 const API_KEY =
   process.env.GOOGLE_MAPS_PLATFORM_KEY ||
-  (import.meta as any).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
-  (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
-  (globalThis as any).GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as unknown as { env: Record<string, string> }).env?.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+  (import.meta as unknown as { env: Record<string, string> }).env?.VITE_GOOGLE_MAPS_API_KEY ||
+  (globalThis as unknown as Record<string, string>).GOOGLE_MAPS_PLATFORM_KEY ||
   '';
 
 const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';

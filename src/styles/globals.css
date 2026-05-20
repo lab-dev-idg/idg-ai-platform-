@@ -38,6 +38,21 @@
     --dark-navy: #001a4d;
     --brilliant-blue: #0066ff;
     --soft-bg: #f8fafc;
+    
+    /* Enterprise Glass & Surfaces */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-blur: 16px;
+    --surface-primary: #ffffff;
+    --surface-secondary: #f8fafc;
+    --surface-elevated: #ffffff;
+    --elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --elevation-2: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    
+    /* Animation & Motion defaults */
+    --motion-duration-sm: 150ms;
+    --motion-duration-md: 250ms;
+    --motion-timing-soft: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   * {

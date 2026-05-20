@@ -1,7 +1,7 @@
 export interface Message {
   role: 'user' | 'model';
   text: string;
-  groundingChunks?: any[];
+  groundingChunks?: unknown[];
 }
 
 export interface BorderStatus {

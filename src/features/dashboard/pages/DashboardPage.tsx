@@ -1,66 +1,27 @@
-import { useState } from "react";
-import { useLanguage } from "@/lib/LanguageContext";
+import { useSettingsStore } from '@/store/settingsStore';
 import ReactMarkdown from "react-markdown";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Toaster } from "@/shared/ui/toaster";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 
 import { Sidebar } from "@/features/sidebar";
 import { StatsSection } from "@/features/dashboard";
-import { ChatInterface, Message } from "@/features/chat";
+import { ChatInterface } from "@/features/chat";
 import { DashboardLayout } from "@/app/layouts/DashboardLayout";
+import { useChatStore } from "@/store/chatStore";
 
 export default function DashboardPage() {
-  const { t: translations } = useLanguage();
+  const { t: translations } = useSettingsStore();
 
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "model",
-      text: "بەخێربێیت بۆ IDG Gateway",
-    },
-  ]);
-
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-
-  const handleSend = async (text?: string) => {
-    const messageText = text || input;
-    if (!messageText.trim() || isLoading) return;
-
-    const userMessage: Message = { role: "user" as const, text: messageText };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const chatHistory = messages.map(msg => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.text }]
-      }));
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: messageText,
-          history: chatHistory
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to get response");
-      
-      const data = await response.json();
-      const modelMessage: Message = { role: "model" as const, text: data.text };
-      setMessages(prev => [...prev, modelMessage]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: "model", text: "ببوورە دووچاری کێشەیەک بووم لە کاتی پەیوەندی کردن بە سێرڤەر." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    messages,
+    input,
+    isLoading,
+    selectedMessage,
+    setInput,
+    setSelectedMessage,
+    handleSend
+  } = useChatStore();
 
   const t = {
     ...translations,

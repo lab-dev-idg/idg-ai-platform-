@@ -1,14 +1,12 @@
 import { useRef } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import { Bot, Loader2, Send, Package, ShieldAlert, FileText, Plane, DollarSign, UserCheck, Wallet, Building2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useLanguage } from "@/lib/LanguageContext";
+import { AnimatePresence } from "motion/react";
+import { Loader2, Package, ShieldAlert, FileText, Plane, DollarSign, UserCheck, Wallet, Building2 } from "lucide-react";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { ScrollArea } from "@/shared/ui/scroll-area";
+import { useSettingsStore } from '@/store/settingsStore';
+import { MessageItem } from "./MessageItem";
+import { ChatInputArea } from "./ChatInputArea";
 
 const QUICK_ACTIONS = [
   { label: "تێچووی کۆنتێنەر", icon: Package, prompt: "تێچووی هێنانی کۆنتێنەرێکی ٤٠ پێ لە چینەوە بۆ ئوم قەسر چەندە؟" },
@@ -21,18 +19,15 @@ const QUICK_ACTIONS = [
   { label: "بانکەکان و پارەدان", icon: Building2, prompt: "چۆنیەتی بەستنەوەی ئەکاونت بە بانکەکان و گواستنەوەی پارە" },
 ];
 
-export interface Message {
-  role: "user" | "model";
-  text: string;
-}
+import { ChatMessage } from "@/store/chatStore";
 
 interface ChatInterfaceProps {
-  messages: Message[];
+  messages: ChatMessage[];
   input: string;
   setInput: (val: string) => void;
   isLoading: boolean;
   handleSend: (text?: string) => Promise<void>;
-  setSelectedMessage: (msg: Message) => void;
+  setSelectedMessage: (msg: ChatMessage) => void;
 }
 
 export function ChatInterface({ 
@@ -43,7 +38,7 @@ export function ChatInterface({
   handleSend, 
   setSelectedMessage 
 }: ChatInterfaceProps) {
-  const { t } = useLanguage();
+  const { t } = useSettingsStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -54,31 +49,11 @@ export function ChatInterface({
           <div className="p-4 md:p-6 space-y-6">
             <AnimatePresence initial={false}>
               {messages.map((msg, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === "user" ? "justify-start" : "justify-end"}`}
-                >
-                  <div className="flex gap-3 max-w-[85%]">
-                    <Avatar className="w-8 h-8 mt-1 border shadow-sm bg-[#0066ff]">
-                      <AvatarFallback className="bg-[#0066ff] text-white">
-                        <Bot className="w-4 h-4" />
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div
-                      onClick={() => setSelectedMessage(msg)}
-                      className={`group relative p-4 rounded-2xl shadow-sm cursor-pointer ${msg.role === 'model' ? 'ai-bubble' : 'bg-slate-100 text-slate-800'}`}
-                    >
-                      <div className="prose prose-sm max-w-none break-words">
-                        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                          {msg.text}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                <MessageItem 
+                  key={idx} 
+                  msg={msg} 
+                  onClick={() => setSelectedMessage(msg)} 
+                />
               ))}
             </AnimatePresence>
 
@@ -112,24 +87,14 @@ export function ChatInterface({
           ))}
         </div>
 
-        <div className="p-3 md:p-4 border-t">
-          <div className="relative flex items-center gap-2 md:gap-3 max-w-4xl mx-auto">
-            <Input
-              placeholder={t.chat.placeholder}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              className="h-12 md:h-14 rounded-xl md:rounded-2xl chat-input text-sm md:text-base border-2 focus-visible:ring-0"
-            />
-            <Button
-              onClick={() => handleSend()}
-              disabled={isLoading}
-              className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-[#0066FF] shrink-0 shadow-lg shadow-blue-500/30 hover:bg-[#005ce6] transition-all"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
+        {/* Chat Input */}
+        <ChatInputArea 
+          input={input} 
+          setInput={setInput} 
+          isLoading={isLoading} 
+          handleSend={handleSend} 
+          placeholder={t.chat.placeholder} 
+        />
       </div>
     </Card>
   );

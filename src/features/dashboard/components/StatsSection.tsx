@@ -1,5 +1,5 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardContent } from '@/shared/ui/card';
+import { Badge } from '@/shared/ui/badge';
 import { MapPin, Anchor, Plane } from 'lucide-react';
 
 export function StatsSection() {

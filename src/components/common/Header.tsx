@@ -1,25 +1,27 @@
-import { Globe, Phone, Mail, UserCheck, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Globe, Phone, Mail, Menu } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
+import { Badge } from '@/shared/ui/badge';
 import { UserMenu } from './UserMenu';
 import { FeedbackDialog } from './FeedbackDialog';
-import { useLanguage } from '@/lib/LanguageContext';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useSettingsStore } from '@/store/settingsStore';
+import { Sheet, SheetContent, SheetTrigger } from '@/shared/ui/sheet';
 import { Sidebar } from '@/features/sidebar';
 
 export function Header() {
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang, t } = useSettingsStore();
 
   return (
     <header className="bg-[#071739] topbar-dark shadow-sm z-50 border-b border-white/10 sticky top-0">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-white/10">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
+            <SheetTrigger
+              render={
+                <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-white/10">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              }
+            />
             <SheetContent side="right" className="p-0 bg-[#071739] border-white/10 w-[300px] sm:w-[350px]">
               <div className="h-full overflow-y-auto p-4 custom-scrollbar">
                 <Sidebar isMobile />

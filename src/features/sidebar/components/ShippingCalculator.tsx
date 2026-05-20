@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Calculator, Scale, Maximize, Zap, Info, DollarSign } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useLanguage } from '@/lib/LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export function ShippingCalculator() {
-  const { t } = useLanguage();
+  const { t } = useSettingsStore();
   const [origin, setOrigin] = useState<string>('China');
   const [destination, setDestination] = useState<string>('Baghdad');
   const [weight, setWeight] = useState<string>('');
