@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Language, translations } from '@/shared/i18n/index';
+import { Language, translations } from '@/lib/translations';
 
 interface SettingsState {
   lang: Language;

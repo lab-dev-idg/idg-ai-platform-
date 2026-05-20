@@ -31,19 +31,44 @@ export class GeminiProvider implements AIProvider {
     const latestMessage = history.pop();
     if (!latestMessage) return;
 
-    const responseStream = await this.ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
-      contents: [...history, latestMessage],
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        ...((config as Record<string, unknown>) || {})
-      }
-    });
+    try {
+      const responseStream = await this.ai.models.generateContentStream({
+        model: 'gemini-3.5-flash',
+        contents: [...history, latestMessage],
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          ...((config as Record<string, unknown>) || {})
+        }
+      });
 
-    for await (const chunk of responseStream) {
-      if (chunk.text) {
-        yield { text: chunk.text, done: false };
+      for await (const chunk of responseStream) {
+        if (chunk.text) {
+          yield { text: chunk.text, done: false };
+        }
+      }
+    } catch (streamError) {
+      console.warn("Streaming API call failed, attempting non-streaming fallback...", streamError);
+      
+      try {
+        const response = await this.ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: [...history, latestMessage],
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            ...((config as Record<string, unknown>) || {})
+          }
+        });
+
+        if (response && response.text) {
+          yield { text: response.text, done: true };
+        } else {
+          throw streamError;
+        }
+      } catch (fallbackError) {
+        console.error("Gemini non-streaming fallback also failed:", fallbackError);
+        throw fallbackError;
       }
     }
   }
