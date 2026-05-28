@@ -87,6 +87,16 @@ export function Header() {
               >
                 {t.nav?.customs || 'Customs Gateway'}
               </Link>
+              <Link 
+                to="/intelligence" 
+                className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-all ${
+                  pathname === '/intelligence' 
+                    ? 'bg-white/12 text-white shadow-sm' 
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {lang === 'ku' ? 'چاودێری ئابووری (Intel)' : 'الذكاء الاقتصادي'}
+              </Link>
             </nav>
           </div>
         </div>

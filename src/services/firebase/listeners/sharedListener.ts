@@ -1,4 +1,5 @@
 import { onSnapshot, Query, DocumentData, QuerySnapshot } from "firebase/firestore";
+import { handleFirestoreError, OperationType } from "@/services/firebase";
 
 type ListenerId = string;
 
@@ -23,7 +24,10 @@ export function subscribeToQuery<T extends DocumentData>(
         listener.lastData = data;
         listener.subscribers.forEach(cb => cb(data));
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `onSnapshot_query_${listenerId}`);
     });
+
 
     listeners.set(listenerId, {
       subscribers: new Set(),

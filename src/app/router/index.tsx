@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Code splitting dynamic imports for optimal route chunking
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
 const CustomsPage = lazy(() => import("@/features/customs/pages/CustomsPage"));
+const IntelligencePage = lazy(() => import("@/features/intelligence/pages/IntelligencePage"));
 
 // Clean elegant fallback spinner matching the IDG digital cockpit design theme
 function RouteFallback() {
@@ -30,6 +31,7 @@ export function AppRouter() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/customs" element={<CustomsPage />} />
+          <Route path="/intelligence" element={<IntelligencePage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

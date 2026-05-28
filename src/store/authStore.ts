@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, serverTimestamp, googleProvider, signInWithPopup } from '@/services/firebase';
+import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, serverTimestamp, googleProvider, signInWithPopup, OperationType, handleFirestoreError } from '@/services/firebase';
 import { signInAnonymously, User as FirebaseUser, GoogleAuthProvider } from 'firebase/auth';
 
 export interface DemoUser {
@@ -45,16 +45,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
+          let userDoc;
+          try {
+            userDoc = await getDoc(userDocRef);
+          } catch (getErr) {
+            handleFirestoreError(getErr, OperationType.GET, `users/${firebaseUser.uid}`);
+            return;
+          }
           
           if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              createdAt: serverTimestamp()
-            });
+            try {
+              await setDoc(userDocRef, {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
+                createdAt: serverTimestamp()
+              });
+            } catch (setErr) {
+              handleFirestoreError(setErr, OperationType.WRITE, `users/${firebaseUser.uid}`);
+            }
           }
         } catch (dbError) {
           console.warn('Firestore sync postponed or restricted:', dbError);

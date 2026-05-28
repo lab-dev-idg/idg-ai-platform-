@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A systems user account mapped from Firebase Auth.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique user ID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name or nickname"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "The user's profile photo URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the profile was created"
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Shipment": {
+      "title": "Shipment",
+      "description": "A tracked shipment status pinned to the user profile database.",
+      "type": "object",
+      "properties": {
+        "trackingNumber": {
+          "type": "string",
+          "description": "The unique shipment tracking number"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current shipment transit status"
+        },
+        "estimatedDelivery": {
+          "type": "string",
+          "description": "The estimated delivery date string"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The owner user ID linking to the parent user profile"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The last updated timestamp"
+        }
+      },
+      "required": ["trackingNumber", "status", "userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Individual user profile containing basic display or custom metadata."
+    },
+    "/users/{userId}/shipments/{shipmentId}": {
+      "schema": "Shipment",
+      "description": "Sub-collection containing user-tracked and pinned shipment cards."
+    }
+  }
+}

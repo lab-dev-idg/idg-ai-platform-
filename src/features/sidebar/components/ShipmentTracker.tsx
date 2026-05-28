@@ -6,7 +6,7 @@ import { Package, Search, Truck, CheckCircle2, Factory, Clock, History, X, User 
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '@/store/authStore';
 import { subscribeToQuery } from '@idg/realtime';
-import { db, collection, query, serverTimestamp, orderBy, doc, setDoc } from '@/services/firebase';
+import { db, collection, query, serverTimestamp, orderBy, doc, setDoc, OperationType, handleFirestoreError } from '@/services/firebase';
 import { useSettingsStore } from '@/store/settingsStore';
 
 interface Milestone {
@@ -58,6 +58,21 @@ export function ShipmentTracker() {
   useEffect(() => {
     if (!user) return;
 
+    if (user.uid.startsWith('guest_')) {
+      // Local guest session - bypass Firestore and load history from localStorage
+      const localHistoryStr = localStorage.getItem(`shipments_${user.uid}`);
+      if (localHistoryStr) {
+        try {
+          setHistory(JSON.parse(localHistoryStr));
+        } catch {
+          setHistory([]);
+        }
+      } else {
+        setHistory([]);
+      }
+      return;
+    }
+
     const q = query(
       collection(db, `users/${user.uid}/shipments`),
       orderBy('updatedAt', 'desc')
@@ -85,16 +100,36 @@ export function ShipmentTracker() {
       const data = MOCK_SHIPMENTS[id];
       if (data) {
         setShipment(data);
-        // Save to Firebase if user is logged in
+        // Save to Firebase/localStorage if user is logged in
         if (user) {
-          const shipmentRef = doc(db, `users/${user.uid}/shipments`, id);
-          await setDoc(shipmentRef, {
-            trackingNumber: data.trackingNumber,
-            status: data.status,
-            estimatedDelivery: data.estimatedDelivery,
-            userId: user.uid,
-            updatedAt: serverTimestamp()
-          });
+          if (user.uid.startsWith('guest_')) {
+            // Save to localStorage for guest tracking history
+            const guestRecord: ShipmentData = {
+              id,
+              trackingNumber: data.trackingNumber,
+              status: data.status,
+              estimatedDelivery: data.estimatedDelivery
+            };
+            const updated = [
+              guestRecord,
+              ...history.filter(item => item.trackingNumber !== data.trackingNumber)
+            ].slice(0, 10);
+            setHistory(updated);
+            localStorage.setItem(`shipments_${user.uid}`, JSON.stringify(updated));
+          } else {
+            try {
+              const shipmentRef = doc(db, `users/${user.uid}/shipments`, id);
+              await setDoc(shipmentRef, {
+                trackingNumber: data.trackingNumber,
+                status: data.status,
+                estimatedDelivery: data.estimatedDelivery,
+                userId: user.uid,
+                updatedAt: serverTimestamp()
+              });
+            } catch (writeErr) {
+              handleFirestoreError(writeErr, OperationType.WRITE, `users/${user.uid}/shipments/${id}`);
+            }
+          }
         }
       } else {
         setError('ببورە، ئەم ژمارەیە نەدۆزرایەوە. تکایە LX123456789 تاقی بکەرەوە.');
