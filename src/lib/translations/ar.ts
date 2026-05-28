@@ -1,4 +1,8 @@
 export const ar = {
+  nav: {
+    terminal: 'المساعد الذكي',
+    customs: 'بوابة الجمارك (Customs Gateway)',
+  },
   app: {
     title: 'لومبيناكس AI',
     subtitle: 'مساعد اللوجستيات في العراق',

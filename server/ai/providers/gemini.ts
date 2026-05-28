@@ -33,7 +33,7 @@ export class GeminiProvider implements AIProvider {
 
     try {
       const responseStream = await this.ai.models.generateContentStream({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: [...history, latestMessage],
         config: {
           systemInstruction,
@@ -52,7 +52,7 @@ export class GeminiProvider implements AIProvider {
       
       try {
         const response = await this.ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: 'gemini-2.5-flash',
           contents: [...history, latestMessage],
           config: {
             systemInstruction,

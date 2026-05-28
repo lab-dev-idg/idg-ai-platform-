@@ -17,9 +17,13 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
+      "@modules/*": ["./apps/ai-platform/src/modules/*"],
+      "@idg/ui": ["./src/components/idg-ui/index.tsx"],
+      "@idg/realtime": ["./src/services/firebase/listeners/sharedListener.ts"],
+      "@idg/domain": ["./src/shared/domain/customs/types.ts"],
       "@/shared/ui/*": ["./src/components/ui/*"],
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "components", "lib", "vite-env.d.ts", "*.ts", "*.tsx"]
+  "include": ["src", "components", "lib", "vite-env.d.ts", "*.ts", "*.tsx", "apps"]
 }

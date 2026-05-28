@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/button';
 import { Package, Search, Truck, CheckCircle2, Factory, Clock, History, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '@/store/authStore';
-import { subscribeToQuery } from '@/services/firebase/listeners/sharedListener';
+import { subscribeToQuery } from '@idg/realtime';
 import { db, collection, query, serverTimestamp, orderBy, doc, setDoc } from '@/services/firebase';
 import { useSettingsStore } from '@/store/settingsStore';
 

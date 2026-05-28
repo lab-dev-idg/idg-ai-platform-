@@ -1,4 +1,8 @@
 export const ku = {
+  nav: {
+    terminal: 'یاریدەدەری زیرەک',
+    customs: 'دەروازەی گومرگ (Customs Gateway)',
+  },
   app: {
     title: 'Lombenax AI',
     subtitle: 'یاریدەدەری لۆجیستیکی عێراق',
