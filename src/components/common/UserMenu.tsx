@@ -1,4 +1,3 @@
-import { auth, googleProvider, signInWithPopup } from '@/services/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
@@ -14,12 +13,12 @@ import { LogOut, User, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UserMenu() {
-  const { user, loading, loginAsDemo, logout } = useAuthStore();
+  const { user, loading, loginAsDemo, loginWithGoogle, logout } = useAuthStore();
   const { lang, t } = useSettingsStore();
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await loginWithGoogle();
       toast.success(lang === 'ku' ? 'بە سەرکەوتوویی چوویتە ژوورەوە!' : 'تم تسجيل الدخول بنجاح!');
     } catch (error: unknown) {
       console.warn('Google Auth popup failed or was blocked:', error);

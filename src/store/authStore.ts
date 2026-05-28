@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, serverTimestamp } from '@/services/firebase';
-import { signInAnonymously, User as FirebaseUser } from 'firebase/auth';
+import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, serverTimestamp, googleProvider, signInWithPopup } from '@/services/firebase';
+import { signInAnonymously, User as FirebaseUser, GoogleAuthProvider } from 'firebase/auth';
 
 export interface DemoUser {
   uid: string;
@@ -16,18 +16,26 @@ interface AuthState {
   user: AppUser | null;
   loading: boolean;
   initialized: boolean;
+  googleAccessToken: string | null;
   
   // Actions
   initAuth: () => () => void;
   loginAsDemo: (name?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<{ user: FirebaseUser; token: string | null }>;
   logout: () => Promise<void>;
+  setGoogleAccessToken: (token: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
   initialized: false,
+  googleAccessToken: null,
   
+  setGoogleAccessToken: (token: string | null) => {
+    set({ googleAccessToken: token });
+  },
+
   initAuth: () => {
     if (get().initialized) return () => {};
 
@@ -69,6 +77,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return unsubscribe;
   },
   
+  loginWithGoogle: async () => {
+    set({ loading: true });
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken || null;
+      set({ user: result.user, googleAccessToken: token, loading: false });
+      return { user: result.user, token };
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
   loginAsDemo: async (customName?: string) => {
     set({ loading: true });
     try {
@@ -97,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       localStorage.removeItem('idg_demo_user');
       await signOut(auth);
-      set({ user: null, loading: false });
+      set({ user: null, googleAccessToken: null, loading: false });
     } catch (signOutError) {
       console.error('Sign out error:', signOutError);
       set({ loading: false });
