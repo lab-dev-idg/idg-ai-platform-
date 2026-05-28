@@ -19,3 +19,6 @@ export * from './orchestrator/ToolExecutionQueue';
 export * from './orchestrator/ResponseValidationEngine';
 export * from './orchestrator/RAGControlGate';
 export * from './orchestrator/AIOrchestrator';
+export * from './kernel/KernelTelemetry';
+export * from './kernel/KernelGovernor';
+export * from './kernel/AIKernel';

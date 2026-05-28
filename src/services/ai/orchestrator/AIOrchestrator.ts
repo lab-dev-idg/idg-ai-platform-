@@ -6,7 +6,7 @@
  * and transaction execution stages. Transforms IDG into an audit-ready, high-integrity AI OS.
  */
 
-import { UserType } from '../registry/UserRegistry';
+import { UserType, USER_TYPE_REGISTRY } from '../registry/UserRegistry';
 import { IDGOperationalState, CompleteAIContext } from '../context/ContextEngine';
 import { ContextFusion } from '../context/ContextFusion';
 import { IntentCategory, classifyIntentLocally } from '../registry/IntentRegistry';
@@ -16,6 +16,8 @@ import { RetrievalEngine, RetrievalOutput } from '../knowledge/RetrievalEngine';
 import { ToolExecutionQueue, QueueTask } from './ToolExecutionQueue';
 import { ResponseValidationEngine } from './ResponseValidationEngine';
 import { AIActionContract, ActionFramework } from '../action/ActionFramework';
+import { AIKernel } from '../kernel/AIKernel';
+import { KernelGovernor } from '../kernel/KernelGovernor';
 
 export interface OrchestratorDecision {
   status: 'SUCCESS' | 'BLOCKED' | 'SAFETY_REJECTED' | 'FAILED';
@@ -57,6 +59,7 @@ export class AIOrchestrator {
     systemTelemetry: IDGOperationalState,
     payloadOverrides: Record<string, unknown> = {}
   ): Promise<OrchestratorDecision> {
+    const pipelineStart = Date.now();
     console.log(`[ORCHESTRATOR] Initializing IDG transaction pipeline. Query length: ${userInput.length}`);
 
     const sysTraceId = `IDG-SYS-${Math.floor(100000 + Math.random() * 900000)}-2026`;
@@ -65,7 +68,11 @@ export class AIOrchestrator {
     // ==========================================
     // 1. INTENT DETECTION
     // ==========================================
-    const intent = classifyIntentLocally(userInput);
+    let intent = KernelGovernor.getInstance().getCachedIntent(userInput);
+    if (!intent) {
+      intent = classifyIntentLocally(userInput);
+      KernelGovernor.getInstance().cacheIntent(userInput, intent);
+    }
     console.log(`[ORCHESTRATOR] Step 1 - Intent Detected: [${intent}]`);
 
 
@@ -136,6 +143,24 @@ export class AIOrchestrator {
         resolvedRole
       );
 
+      // Report metric to AI Kernel Governor
+      try {
+        const userRoleDef = USER_TYPE_REGISTRY[userType];
+        const clearance = userRoleDef ? userRoleDef.clearanceLevel : 0;
+        AIKernel.getInstance().monitorTransaction({
+          durationMs: Date.now() - pipelineStart,
+          intentCategory: intent,
+          contextType: isolatedType,
+          didRAGRun: false,
+          didToolRun: false,
+          hasErrors: true,
+          errorMessage: securityStatus.reason || 'Sovereign security block',
+          userClearance: clearance
+        });
+      } catch (e) {
+        console.warn('[AIOrchestrator] Kernel block telemetry bypassed.', e);
+      }
+
       return {
         status: 'BLOCKED',
         intent,
@@ -164,8 +189,12 @@ export class AIOrchestrator {
       // The RetrievalEngine internally fetches documents; we pre-validate domain scopes here.
       // Filter domains that are forbidden for this user role
       ragResult = await RetrievalEngine.getInstance().retrieve(userInput, intent, snapshot);
+      if (ragResult) {
+        ragResult.rankedResults = KernelGovernor.getInstance().limitRAGFetches(ragResult.rankedResults);
+        ragResult.citationsList = KernelGovernor.getInstance().limitRAGFetches(ragResult.citationsList);
+      }
       didRAG_run = true;
-      console.log(`[ORCHESTRATOR] Resolved ${ragResult.citationsList.length} legal citation records.`);
+      console.log(`[ORCHESTRATOR] Resolved ${ragResult?.citationsList.length || 0} legal citation records.`);
     }
 
 
@@ -227,6 +256,53 @@ export class AIOrchestrator {
     if (selectedToolName) {
       console.log(`[ORCHESTRATOR] Step 6 - Triggering Safe Mode queue dispatch for: '${selectedToolName}'`);
       
+      const payloadHash = JSON.stringify(toolPayload || {});
+      const hasLock = KernelGovernor.getInstance().acquireToolLock(selectedToolName, payloadHash);
+
+      if (!hasLock) {
+         const warningText = `Governing Protection: Blocked concurrent duplicate tool chain for '${selectedToolName}'.`;
+         const fallbackMessage = ActionFramework.createAction(
+           'DISPLAY_MESSAGE',
+           {
+             text: warningText,
+             data: { governorThrottleFlagged: true }
+           },
+           1.0,
+           intent,
+           resolvedRole
+         );
+         
+         try {
+           const userRoleDef = USER_TYPE_REGISTRY[userType];
+           const clearance = userRoleDef ? userRoleDef.clearanceLevel : 0;
+           AIKernel.getInstance().monitorTransaction({
+             durationMs: Date.now() - pipelineStart,
+             intentCategory: intent,
+             contextType: isolatedType,
+             didRAGRun: didRAG_run,
+             didToolRun: false,
+             toolUsed: selectedToolName,
+             hasErrors: true,
+             errorMessage: warningText,
+             userClearance: clearance
+           });
+         } catch (err) {
+           console.warn('[ORCHESTRATOR] Duplicate tool lock telemetry bypass', err);
+         }
+
+         return {
+           status: 'SAFETY_REJECTED',
+           intent,
+           isolatedContextUsed: isolatedType,
+           riskEvaluation: {
+             level: 'MEDIUM',
+             score: securityStatus.riskScore + 10,
+             fallbackStrategy: 'DEDUPLICATED'
+           },
+           actionContract: fallbackMessage
+         };
+      }
+
       const requiredClearance = selectedToolName.startsWith('customs') ? 0 :
                                 selectedToolName.startsWith('logistics') ? 1 : 2;
 
@@ -250,6 +326,24 @@ export class AIOrchestrator {
         console.error(`[ORCHESTRATOR] Queue Execution crashed. Reverting pipeline, mapping error message.`, err);
         const errText = err instanceof Error ? err.message : 'Sequential operational flow broke.';
         
+        try {
+          const userRoleDef = USER_TYPE_REGISTRY[userType];
+          const clearance = userRoleDef ? userRoleDef.clearanceLevel : 0;
+          AIKernel.getInstance().monitorTransaction({
+            durationMs: Date.now() - pipelineStart,
+            intentCategory: intent,
+            contextType: isolatedType,
+            didRAGRun: didRAG_run,
+            didToolRun: false,
+            toolUsed: selectedToolName,
+            hasErrors: true,
+            errorMessage: errText,
+            userClearance: clearance
+          });
+        } catch (errTelemetry) {
+          console.warn('[ORCHESTRATOR] Telemetry check sequence bypass', errTelemetry);
+        }
+
         const fallbackMessage = ActionFramework.createAction(
           'DISPLAY_MESSAGE',
           {
@@ -323,6 +417,26 @@ export class AIOrchestrator {
     // 8. FINAL OUTPUT FORMATTING
     // ==========================================
     console.log(`[ORCHESTRATOR] Step 8 - Finalizing structured returns logs. Trace: ${validatedContract.metadata.systemTraceId}`);
+
+    // Report metric to AI Kernel Governor
+    try {
+      const userRoleDef = USER_TYPE_REGISTRY[userType];
+      const clearance = userRoleDef ? userRoleDef.clearanceLevel : 0;
+      AIKernel.getInstance().monitorTransaction({
+        durationMs: Date.now() - pipelineStart,
+        intentCategory: intent,
+        contextType: isolatedType,
+        didRAGRun: didRAG_run,
+        didToolRun: didToolRun,
+        toolUsed: selectedToolName || undefined,
+        hasErrors: false,
+        userClearance: clearance
+      });
+      // Feed successful resolution back as reinforcement signal
+      KernelGovernor.getInstance().recordResolutionSuccess(intent);
+    } catch (e) {
+      console.warn('[AIOrchestrator] Kernel monitor transaction fail.', e);
+    }
 
     return {
       status: 'SUCCESS',
