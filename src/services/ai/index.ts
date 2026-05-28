@@ -27,3 +27,11 @@ export * from './sovereign/DistributedNodeRegistry';
 export * from './sovereign/SovereignDataGovernor';
 export * from './sovereign/DisasterRecoveryEngine';
 export * from './sovereign/SovereignAuditExporter';
+export * from './global/GlobalInteropGateway';
+export * from './global/PolicyDataExchange';
+export * from './global/GlobalAICommunication';
+export * from './global/GlobalHSCodeIntelligence';
+export * from './global/GlobalLogisticsOptimizer';
+export * from './global/InternationalComplianceLayer';
+export * from './global/FederatedAIGovernor';
+
