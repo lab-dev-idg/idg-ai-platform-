@@ -1,5 +1,7 @@
 import { useSettingsStore } from '@/store/settingsStore';
 import ReactMarkdown from "react-markdown";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Toaster } from "@/shared/ui/toaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
@@ -12,6 +14,7 @@ import { useChatStore } from "@/store/chatStore";
 
 export default function DashboardPage() {
   const { t: translations } = useSettingsStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const {
     messages,
@@ -22,6 +25,14 @@ export default function DashboardPage() {
     setSelectedMessage,
     handleSend
   } = useChatStore();
+
+  useEffect(() => {
+    const initialPrompt = searchParams.get("prompt");
+    if (initialPrompt && !isLoading && handleSend) {
+      handleSend(initialPrompt);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, isLoading, handleSend, setSearchParams]);
 
   const t = {
     ...translations,

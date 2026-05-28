@@ -18,6 +18,7 @@ import {
   FileCheck2, 
   Database 
 } from 'lucide-react';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface BorderGatewayConfig {
   gatewayId: string;
@@ -38,11 +39,12 @@ interface Broker {
 }
 
 export function AdminPanel() {
+  const { lang } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<'audit' | 'brokers' | 'settings'>('audit');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // Hardcoded initial list of borders configuration
+  // Initial list of borders configuration
   const [gateways, setGateways] = useState<BorderGatewayConfig[]>([
     { gatewayId: 'AX-4001', portName: 'Umm Qasr Port (Basra)', defaultMultiplier: 1.10, strictComplianceMode: true, fastTrackEnabled: true, activeBrokers: 12 },
     { gatewayId: 'AX-4002', portName: 'Ibrahim Al-Khalil (Duhok)', defaultMultiplier: 1.05, strictComplianceMode: true, fastTrackEnabled: false, activeBrokers: 8 },
@@ -100,6 +102,112 @@ export function AdminPanel() {
     return matchesSearch && matchesFilter;
   });
 
+  const tAdmin = {
+    ku: {
+      title: "بەڕێوبەرایەتی گشتی گومرک و تاریفەی ناوەندی",
+      desc: "بەڕێوەبردنی یاساکان، چاودێری کاڵا، مۆڵەتنامەی بریکارەکان و بەستەرەکانی دەروازەی جیاواز.",
+      tabAudit: "پێداچوونەوەی پابەندبوون",
+      tabBrokers: "نۆوسینگەی بریکارەکان",
+      tabSettings: "ڕێکخستنی دەروازەکان",
+      searchPlaceholder: "گەڕان بەپێی کۆدی مانیفێست یان HS...",
+      recordsCount: "تۆمار جیاواز دۆزرایەوە",
+      panelPendingTitle: "مانیفێست و دەروازە چالاکەکانی تێپەڕین",
+      colRecord: "ناسێنەری تۆمار",
+      colShipment: "کۆدی بار",
+      colHS: "پۆلێنی کاڵا (HS)",
+      colDeclared: "ڕاگەیەندراو (USD)",
+      colAssessed: "هاوتای فەرمی (USD)",
+      colRate: "ڕێژە",
+      colDuty: "باجی پێویست",
+      colStatus: "دۆخی سەلامەتی",
+      colOverride: "دەسەڵاتی ناوبژیوانی",
+      noRecords: "هیچ گۆڕانکارییەک نەدۆزرایەوە بۆ پاڵفتەکانی ئێستا.",
+      activeBrokerTitle: "تۆماری فەرمی بریکارە مۆڵەتپێدراوەکان",
+      governedLicenses: "مۆڵەتی بەڕێوەبەرایەتی",
+      thBroker: "ناوی بریکار",
+      thLicense: "ژمارەی مۆڵەتبار",
+      thBorder: "دەروازەی دیاریکراو",
+      thRate: "نمرەی خزمەتگوزاری",
+      thStatus: "دۆخی کار",
+      regulatoryTitle: "چاودێری یاسایی بریکار",
+      regulatoryDesc: "بریکار و نووسینگەکانی مۆڵەتکراو لەم پەڕەیەدا دەبێت چاودێری مۆدێلە فەرمییەکان بکەن بۆ بەدەستهێنانی مۆڵەتی چالاک. ڕاگرتن یان سڕکردنی مۆڵەت ڕێگری دەکات لە پرۆسەی بەئەلکترۆنیکردنی بارەکان.",
+      jointControlsTitle: "کۆنتڕۆڵ و ڕێکخستنی سنوورە فەرمییەکان",
+      globalParams: "بەها جیهانییەکان",
+      saveBtn: "پاشەکەوتکردنی ڕێکخستنەکان",
+      saveBtnUpdating: "چاوەڕێ دەکات...",
+      successMsg: "هاوکۆلکە و بارەکانی دەروازە گشتییەکان بە سەرکەوتوویی لەگەڵ سیستەمی ناوەندی جێبەجێ کرا!",
+      enforceRulesTitle: "یاساکانی چاودێری",
+      enforceRulesDesc: "ڕێڕەوی خێرا سیستمەکە فەرز دەکات بۆ کاڵا زیاتر ناسراو یان کەم مەترسییەکان. دۆخی توندگیری پێداچوونەوەی ١٠٠٪ـی مانیفێست فەرز دەکات کە دەبێت لە ڕێگەی بریکارەکان و بە ڕێکارە دستییەکاندا بڕوات."
+    },
+    ar: {
+      title: "المديرية العامة للمراقبة والسياسات الجمركية",
+      desc: "إدارة تفويضات الامتثال، معايير فحص الشحنات، سجل المخلصين المعتمدين والمنافذ الإقليمية.",
+      tabAudit: "تدقيق الامتثال الجمركي",
+      tabBrokers: "سجل المخلصين المرخصين",
+      tabSettings: "إعدادات البوابات والمنافذ",
+      searchPlaceholder: "البحث عن شحنة أو رمز تعريفة...",
+      recordsCount: "القيود المسترجعة",
+      panelPendingTitle: "البيانات والقيود الجمركية قيد المراجعة والمطابقة",
+      colRecord: "رقم القيد",
+      colShipment: "معرف الشحنة",
+      colHS: "رمز النظام المنسق (HS)",
+      colDeclared: "المعلن عنه (USD)",
+      colAssessed: "المقيّم بالدولار (USD)",
+      colRate: "النسبة",
+      colDuty: "الرسوم المقدرة",
+      colStatus: "الحالة الأمنية",
+      colOverride: "إجراء التجاوز والتعديل",
+      noRecords: "لا توجد بيانات جمركية مطابقة للخيارات الحالية.",
+      activeBrokerTitle: "السجل الرقمي للمخلصين الجمركيين المعتمدين",
+      governedLicenses: "التراخيص الحكومية",
+      thBroker: "اسم مكتب التخليص",
+      thLicense: "رقم رخصة العمل",
+      thBorder: "المنفذ الحدودي المعين",
+      thRate: "مستوى الأداء والسرعة",
+      thStatus: "الحالة التشغيلية",
+      regulatoryTitle: "التدقيق والمتابعة القانونية",
+      regulatoryDesc: "يجب على جميع مكاتب ووكالات التخليص المدرجة الحفاظ على ترخيص أمني جاري من سلطة الجمارك المركزية لتتمكن من تقديم البيانات إلكترونياً وتنسيق عمليات العبور الجمركي.",
+      jointControlsTitle: "التحكم في معايير البوابات الجمركية الإقليمية",
+      globalParams: "المعايير العامة",
+      saveBtn: "حفظ وتطبيق الخيارات",
+      saveBtnUpdating: "جاري الإرسال...",
+      successMsg: "تم تعميم وتطبيق عتبات سياسة الامتثال على المحطات الطرفية والحدودية بنجاح!",
+      enforceRulesTitle: "قواعد التنظيم اللوجستي",
+      enforceRulesDesc: "تتيح بوابات المرور السريع المعالجة الفورية المباشرة للشحنات ذات مؤشرات الخطورة المنخفضة. يؤدي تفعيل الوضع الصارم إلى إلزام المحطة بإجراء مراجعة يدوية بنسبة ١٠٠٪ لكافة الطرود التابعة."
+    }
+  };
+
+  const ui = tAdmin[lang === 'ku' ? 'ku' : 'ar'];
+
+  const getStatusBadge = (status: CustomsRecord['status']) => {
+    switch (status) {
+      case 'APPROVED':
+        return (
+          <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-[10px] px-2 py-0.5 whitespace-nowrap">
+            {lang === 'ku' ? 'پەسەندکراو' : lang === 'ar' ? 'تمت الموافقة' : 'APPROVED'}
+          </Badge>
+        );
+      case 'UNDER_REVIEW':
+        return (
+          <Badge variant="secondary" className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-[10px] px-2 py-0.5 whitespace-nowrap">
+            {lang === 'ku' ? 'لە ژێر پشکنین' : lang === 'ar' ? 'تحت التدقيق' : 'UNDER REVIEW'}
+          </Badge>
+        );
+      case 'REJECTED':
+        return (
+          <Badge variant="destructive" className="bg-rose-500 hover:bg-rose-600 text-white font-semibold text-[10px] px-2 py-0.5 whitespace-nowrap">
+            {lang === 'ku' ? 'ڕەتکراوە' : lang === 'ar' ? 'مرفوض' : 'REJECTED'}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="border-slate-400 dark:border-slate-600 text-slate-500 font-semibold text-[10px] px-2 py-0.5 whitespace-nowrap">
+            {lang === 'ku' ? 'چاوەڕێ' : lang === 'ar' ? 'قيد الانتظار' : 'PENDING'}
+          </Badge>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6" id="customs-admin-features">
       {/* Segment Header */}
@@ -107,41 +215,41 @@ export function AdminPanel() {
         <div>
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Iraq customs Administration</h1>
+            <h2 className="text-base font-bold text-foreground tracking-tight">{ui.title}</h2>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Governing compliance policies, cargo screening parameters, authorized clearers registry, and regional gateway configs.
+            {ui.desc}
           </p>
         </div>
         
         {/* Navigation Selector */}
-        <div className="flex border rounded-lg p-0.5 bg-background shadow-sm" id="admin-tabs">
+        <div className="flex border rounded-xl p-1 bg-background shadow-xs shrink-0 self-start md:self-auto" id="admin-tabs">
           <button
             onClick={() => setActiveTab('audit')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
-              activeTab === 'audit' ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "hover:bg-muted text-muted-foreground"
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+              activeTab === 'audit' ? "bg-primary text-primary-foreground font-bold shadow-xs" : "hover:bg-muted text-muted-foreground"
             )}
           >
-            <FileCheck2 className="w-3.5 h-3.5" /> Compliance Audit
+            <FileCheck2 className="w-3.5 h-3.5" /> {ui.tabAudit}
           </button>
           <button
             onClick={() => setActiveTab('brokers')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
-              activeTab === 'brokers' ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "hover:bg-muted text-muted-foreground"
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+              activeTab === 'brokers' ? "bg-primary text-primary-foreground font-bold shadow-xs" : "hover:bg-muted text-muted-foreground"
             )}
           >
-            <Users className="w-3.5 h-3.5" /> Customs Clearers
+            <Users className="w-3.5 h-3.5" /> {ui.tabBrokers}
           </button>
           <button
             onClick={() => setActiveTab('settings')}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
-              activeTab === 'settings' ? "bg-primary text-primary-foreground font-semibold shadow-sm" : "hover:bg-muted text-muted-foreground"
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+              activeTab === 'settings' ? "bg-primary text-primary-foreground font-bold shadow-xs" : "hover:bg-muted text-muted-foreground"
             )}
           >
-            <Settings className="w-3.5 h-3.5" /> Portal Settings
+            <Settings className="w-3.5 h-3.5" /> {ui.tabSettings}
           </button>
         </div>
       </div>
@@ -149,27 +257,28 @@ export function AdminPanel() {
       {/* Audit Panel View */}
       {activeTab === 'audit' && (
         <div className="space-y-4" id="compliance-audit-panel">
-          <GlassCard className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between shadow-sm">
+          <GlassCard className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between shadow-xs">
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search shipment / HS code..."
+                placeholder={ui.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                dir="ltr"
+                className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-left"
               />
             </div>
             
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto self-stretch md:self-auto">
+            <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto self-stretch md:self-auto custom-scrollbar">
               {(['ALL', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'] as const).map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setStatusFilter(filter)}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-mono border transition-all h-8 break-keep shrink-0",
+                    "px-3 py-1 rounded-lg text-[10px] font-mono border transition-all h-8 break-keep shrink-0 cursor-pointer",
                     statusFilter === filter 
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border-slate-900 dark:border-slate-100" 
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border-slate-900 dark:border-slate-100 font-bold" 
                       : "bg-background text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
                   )}
                 >
@@ -182,61 +291,54 @@ export function AdminPanel() {
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Database className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">Pending Assessment & Clearances</h3>
+                <Database className="w-4 h-4 text-[#0066FF]" />
+                <h3 className="text-sm font-bold text-foreground">{ui.panelPendingTitle}</h3>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono">
-                {filteredRecords.length} records found
+              <Badge variant="outline" className="text-[10px] font-mono font-medium">
+                {filteredRecords.length} {ui.recordsCount}
               </Badge>
             </div>
 
-            <div className="overflow-x-auto border rounded-xl bg-background/50">
+            <div className="overflow-x-auto border rounded-2xl bg-background/50">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
-                    <th className="p-3 font-semibold">Record ID</th>
-                    <th className="p-3 font-semibold">Shipment</th>
-                    <th className="p-3 font-semibold">HS Classification</th>
-                    <th className="p-3 font-semibold text-right">Declared (USD)</th>
-                    <th className="p-3 font-semibold text-right">Assessed (USD)</th>
-                    <th className="p-3 font-semibold text-right">Rate</th>
-                    <th className="p-3 font-semibold text-right">Assessed Duty</th>
-                    <th className="p-3 font-semibold text-center">Security Status</th>
-                    <th className="p-3 font-semibold text-center">Override Action</th>
+                  <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
+                    <th className="p-3 pl-4 text-left">{ui.colRecord}</th>
+                    <th className="p-3 text-left">{ui.colShipment}</th>
+                    <th className="p-3 text-left">{ui.colHS}</th>
+                    <th className="p-3 text-right">{ui.colDeclared}</th>
+                    <th className="p-3 text-right">{ui.colAssessed}</th>
+                    <th className="p-3 text-right">{ui.colRate}</th>
+                    <th className="p-3 text-right">{ui.colDuty}</th>
+                    <th className="p-3 text-center">{ui.colStatus}</th>
+                    <th className="p-3 text-center pr-4">{ui.colOverride}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredRecords.map((rec) => (
-                    <tr key={rec.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-                      <td className="p-3 font-mono text-slate-500">{rec.id}</td>
-                      <td className="p-3 font-mono font-bold text-foreground">{rec.shipmentId}</td>
-                      <td className="p-3 font-mono bg-slate-50/50 dark:bg-slate-900/30 rounded px-1.5 py-0.5">{rec.hsCode}</td>
-                      <td className="p-3 text-right font-mono">${rec.declaredValue.toLocaleString()}</td>
-                      <td className="p-3 text-right font-mono text-slate-900 dark:text-slate-100 font-medium">${rec.assessedValue.toLocaleString()}</td>
-                      <td className="p-3 text-right font-mono text-slate-500">{rec.tariffRate}%</td>
-                      <td className="p-3 text-right font-mono text-primary font-bold">${rec.totalDuty.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="p-3 text-center">
-                        {rec.status === 'APPROVED' && (
-                          <Badge variant="default" className="bg-emerald-500 text-white hover:bg-emerald-600 font-mono text-[10px]">APPROVED</Badge>
-                        )}
-                        {rec.status === 'UNDER_REVIEW' && (
-                          <Badge variant="secondary" className="bg-amber-500 text-white hover:bg-amber-600 font-mono text-[10px]">UNDER REVIEW</Badge>
-                        )}
-                        {rec.status === 'PENDING' && (
-                          <Badge variant="outline" className="border-slate-400 text-slate-500 dark:border-slate-600 font-mono text-[10px]">PENDING</Badge>
-                        )}
-                        {rec.status === 'REJECTED' && (
-                          <Badge variant="destructive" className="bg-rose-500 text-white hover:bg-rose-600 font-mono text-[10px]">REJECTED</Badge>
-                        )}
+                    <tr key={rec.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors font-semibold">
+                      <td className="p-3 font-mono text-slate-500 text-left" dir="ltr">{rec.id}</td>
+                      <td className="p-3 font-mono font-bold text-foreground text-left" dir="ltr">{rec.shipmentId}</td>
+                      <td className="p-3 text-left" dir="ltr">
+                        <span className="font-mono bg-slate-100 dark:bg-slate-800 rounded px-2 py-0.5 text-[10px] text-slate-600 dark:text-slate-300">
+                          {rec.hsCode}
+                        </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 text-right font-mono" dir="ltr">${rec.declaredValue.toLocaleString()}</td>
+                      <td className="p-3 text-right font-mono text-slate-900 dark:text-slate-100 font-bold" dir="ltr">${rec.assessedValue.toLocaleString()}</td>
+                      <td className="p-3 text-right font-mono text-slate-500" dir="ltr">{rec.tariffRate}%</td>
+                      <td className="p-3 text-right font-mono text-primary font-black" dir="ltr">${rec.totalDuty.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      <td className="p-3 text-center">
+                        {getStatusBadge(rec.status)}
+                      </td>
+                      <td className="p-3 pr-4">
                         <div className="flex items-center justify-center gap-1.5">
                           {rec.status !== 'APPROVED' && (
                             <Button
                               onClick={() => handleUpdateStatus(rec.id, 'APPROVED')}
-                              className="h-7 w-7 p-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 rounded-md"
+                              className="h-7 w-7 p-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 rounded-lg cursor-pointer"
                               id={`approve-${rec.id}`}
-                              title="Approve Cargo Declaration"
+                              title="Approve Cargo"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </Button>
@@ -244,9 +346,9 @@ export function AdminPanel() {
                           {rec.status !== 'UNDER_REVIEW' && rec.status !== 'APPROVED' && (
                             <Button
                               onClick={() => handleUpdateStatus(rec.id, 'UNDER_REVIEW')}
-                              className="h-7 w-7 p-0 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 rounded-md"
+                              className="h-7 w-7 p-0 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 rounded-lg cursor-pointer"
                               id={`review-${rec.id}`}
-                              title="Set Under Review"
+                              title="Under Review"
                             >
                               <AlertTriangle className="w-3.5 h-3.5" />
                             </Button>
@@ -254,9 +356,9 @@ export function AdminPanel() {
                           {rec.status !== 'REJECTED' && (
                             <Button
                               onClick={() => handleUpdateStatus(rec.id, 'REJECTED')}
-                              className="h-7 w-7 p-0 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 rounded-md"
+                              className="h-7 w-7 p-0 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 rounded-lg cursor-pointer"
                               id={`reject-${rec.id}`}
-                              title="Reject Verification"
+                              title="Reject"
                             >
                               <XCircle className="w-3.5 h-3.5" />
                             </Button>
@@ -267,8 +369,8 @@ export function AdminPanel() {
                   ))}
                   {filteredRecords.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-xs text-muted-foreground font-medium">
-                        No border declarations match current query parameter filters.
+                      <td colSpan={9} className="p-8 text-center text-xs text-slate-400 italic">
+                        {ui.noRecords}
                       </td>
                     </tr>
                   )}
@@ -286,37 +388,43 @@ export function AdminPanel() {
             <div className="lg:col-span-2">
               <GlassCard className="p-6 h-full space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-primary" /> Active Clearance Brokers Registry
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-primary" /> {ui.activeBrokerTitle}
                   </h3>
-                  <Badge variant="outline" className="text-[10px] font-mono">Governed Licenses</Badge>
+                  <Badge variant="outline" className="text-[10px] font-mono font-medium">{ui.governedLicenses}</Badge>
                 </div>
 
-                <div className="overflow-x-auto border rounded-xl bg-background/50">
+                <div className="overflow-x-auto border rounded-2xl bg-background/50">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                        <th className="p-3 font-semibold">Broker Name</th>
-                        <th className="p-3 font-semibold">License Number</th>
-                        <th className="p-3 font-semibold">Assigned Border</th>
-                        <th className="p-3 font-semibold text-right">Score/Rate</th>
-                        <th className="p-3 font-semibold text-center">Status</th>
+                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
+                        <th className="p-3 pl-4">{ui.thBroker}</th>
+                        <th className="p-3 text-left">{ui.thLicense}</th>
+                        <th className="p-3">{ui.thBorder}</th>
+                        <th className="p-3 text-right">{ui.thRate}</th>
+                        <th className="p-3 text-center">{ui.thStatus}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {brokers.map(br => (
-                        <tr key={br.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
-                          <td className="p-3 font-bold text-foreground">{br.name}</td>
-                          <td className="p-3 font-mono text-slate-500">{br.licenseNumber}</td>
-                          <td className="p-3 flex items-center gap-1 text-slate-600 dark:text-slate-300">
-                            <MapPin className="w-3 h-3 text-red-500" /> {br.assignedPort}
+                        <tr key={br.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors font-semibold">
+                          <td className="p-3 pl-4 text-foreground font-bold">{br.name}</td>
+                          <td className="p-3 font-mono text-slate-500 text-left" dir="ltr">{br.licenseNumber}</td>
+                          <td className="p-3 text-left">
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                              <MapPin className="w-3 h-3 text-red-500 shrink-0" /> {br.assignedPort}
+                            </span>
                           </td>
-                          <td className="p-3 text-right font-mono font-bold text-emerald-500">{br.clearanceRate}</td>
+                          <td className="p-3 text-right font-mono font-bold text-emerald-500" dir="ltr">{br.clearanceRate}</td>
                           <td className="p-3 text-center">
                             {br.status === 'ACTIVE' ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-mono text-[9px]">ACTIVE</Badge>
+                              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 text-[9px] font-bold">
+                                {lang === 'ku' ? 'چالاک' : 'ACTIVE'}
+                              </Badge>
                             ) : (
-                              <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30 font-mono text-[9px]">SUSPENDED</Badge>
+                              <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30 text-[9px] font-bold">
+                                {lang === 'ku' ? 'ڕاگیراو' : 'SUSPENDED'}
+                              </Badge>
                             )}
                           </td>
                         </tr>
@@ -329,13 +437,13 @@ export function AdminPanel() {
 
             {/* Verification Notice on right column */}
             <div className="space-y-4">
-              <GlassCard className="p-6 border-amber-500/20 bg-amber-500/[0.01] flex flex-col justify-between h-full">
+              <GlassCard className="p-6 border-amber-500/20 bg-amber-500/[0.01]/2 flex flex-col justify-between h-full">
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 animate-pulse" /> Regulatory Auditing
+                    <AlertTriangle className="w-4 h-4 animate-pulse" /> {ui.regulatoryTitle}
                   </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Customs clearers and brokerage entities listed in this gateway must hold active, audited mandates from the Iraq Customs Authority. Suspension prevents electronic cargo release submissions in accordance with strict compliance frameworks.
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+                    {ui.regulatoryDesc}
                   </p>
                 </div>
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 font-mono">
@@ -354,33 +462,35 @@ export function AdminPanel() {
             <div className="lg:col-span-8 space-y-4">
               <GlassCard className="p-6 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-primary" /> Joint Regional Gateway Controls
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <Sliders className="w-4 h-4 text-primary" /> {ui.jointControlsTitle}
                   </h3>
-                  <Badge variant="outline" className="text-[10px] font-mono">Global Parameters</Badge>
+                  <Badge variant="outline" className="text-[10px] font-mono font-medium">{ui.globalParams}</Badge>
                 </div>
 
                 <div className="space-y-4">
                   {gateways.map(g => (
-                    <div key={g.gatewayId} className="flex flex-col md:flex-row md:items-center justify-between p-3.5 border rounded-xl bg-background/40 gap-4">
+                    <div key={g.gatewayId} className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-2xl bg-background/40 gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold font-mono px-1.5 py-0.5 border bg-muted text-foreground rounded">{g.gatewayId}</span>
+                          <span className="text-xs font-bold font-mono px-1.5 py-0.5 border bg-muted text-foreground rounded text-left" dir="ltr">{g.gatewayId}</span>
                           <span className="text-xs font-bold text-foreground">{g.portName}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground font-mono">
-                          Active agents: {g.activeBrokers} | Valuation factor: {g.defaultMultiplier}x CIF
+                        <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1.5 pt-0.5">
+                          <span>Active agents: <strong className="font-mono">{g.activeBrokers}</strong></span>
+                          <span>|</span>
+                          <span>Valuation factor: <strong className="font-mono">{g.defaultMultiplier}x CIF</strong></span>
                         </p>
                       </div>
 
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer" onClick={() => handleToggleStrict(g.gatewayId)}>Strict Mode</label>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer select-none" onClick={() => handleToggleStrict(g.gatewayId)}>Strict Mode</label>
                           <button
                             onClick={() => handleToggleStrict(g.gatewayId)}
                             className={cn(
-                              "w-9 h-5 rounded-full p-0.5 transition-colors focus:outline-none",
-                              g.strictComplianceMode ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+                              "w-9 h-5 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer",
+                              g.strictComplianceMode ? "bg-[#0066FF]" : "bg-slate-200 dark:bg-slate-800"
                             )}
                           >
                             <div className={cn("bg-background w-4 h-4 rounded-full shadow-sm transition-transform", g.strictComplianceMode ? "translate-x-4" : "translate-x-0")} />
@@ -388,11 +498,11 @@ export function AdminPanel() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer" onClick={() => handleToggleFastTrack(g.gatewayId)}>Fast Pass</label>
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer select-none" onClick={() => handleToggleFastTrack(g.gatewayId)}>Fast Pass</label>
                           <button
                             onClick={() => handleToggleFastTrack(g.gatewayId)}
                             className={cn(
-                              "w-9 h-5 rounded-full p-0.5 transition-colors focus:outline-none",
+                              "w-9 h-5 rounded-full p-0.5 transition-colors focus:outline-none cursor-pointer",
                               g.fastTrackEnabled ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-800"
                             )}
                           >
@@ -408,16 +518,16 @@ export function AdminPanel() {
                   <Button 
                     onClick={handleSaveAllSettings}
                     disabled={savingSettings}
-                    className="text-xs h-9 min-w-[124px] gap-1.5"
+                    className="text-xs h-9 min-w-[124px] gap-1.5 cursor-pointer bg-[#0066FF] hover:bg-blue-600"
                   >
                     {savingSettings ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    {savingSettings ? "Updating..." : "Save Configs"}
+                    {savingSettings ? ui.saveBtnUpdating : ui.saveBtn}
                   </Button>
                 </div>
 
                 {saveSuccess && (
-                  <div className="p-2 text-center text-[10px] font-bold text-emerald-500 bg-emerald-500/10 rounded-lg animate-pulse">
-                    Compliance policy thresholds successfully deployed to regional security gateway terminals!
+                  <div className="p-3 text-center text-[10px] font-bold text-emerald-500 bg-emerald-500/10 rounded-xl animate-pulse">
+                    {ui.successMsg}
                   </div>
                 )}
               </GlassCard>
@@ -425,12 +535,12 @@ export function AdminPanel() {
 
             {/* Quick stats on the right of settings */}
             <div className="lg:col-span-4 space-y-4">
-              <GlassCard className="p-6 space-y-3 bg-primary/5 border-primary/20">
-                <blockquote className="text-[10px] uppercase font-bold text-primary tracking-widest flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5" /> Enforcement Rules
+              <GlassCard className="p-6 space-y-3 bg-[#0066FF]/5 border-blue-500/20">
+                <blockquote className="text-[10px] uppercase font-bold text-[#0066FF] tracking-widest flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5" /> {ui.enforceRulesTitle}
                 </blockquote>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Fast pass pathways utilize real-time risk classification engine to inspect priority imports at the borders, with automatic ad valorem clearances of low-risk HS codes. Strict mode introduces broker audits and 100% manual validation checklists.
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+                  {ui.enforceRulesDesc}
                 </p>
               </GlassCard>
             </div>

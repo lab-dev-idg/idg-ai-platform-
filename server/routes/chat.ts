@@ -10,10 +10,7 @@ let orchestrator: ChatOrchestrator | null = null;
 
 function getOrchestrator() {
   if (!orchestrator) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
-    }
+    const apiKey = process.env.GEMINI_API_KEY || "";
     const provider = new GeminiProvider(apiKey);
     orchestrator = new ChatOrchestrator(provider);
     
