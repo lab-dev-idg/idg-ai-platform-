@@ -35,3 +35,10 @@ export * from './global/GlobalLogisticsOptimizer';
 export * from './global/InternationalComplianceLayer';
 export * from './global/FederatedAIGovernor';
 
+// Phase 13-B Semantic Retrieval exports
+export * from './knowledge/embeddings/types';
+export * from './knowledge/embeddings/EmbeddingEngine';
+export * from './knowledge/VectorStore';
+export * from './knowledge/SemanticRetrievalService';
+export * from './knowledge/HybridRankingEngine';
+
