@@ -12,6 +12,11 @@ export const getSystemPrompt = (context: AIContext): string => {
     `- ${t.name}: ${t.description} (params: ${JSON.stringify(t.parameters)})`
   ).join('\n');
 
+  const currentModule = context.currentModule || 'Unified Logistics Dashboard (Main)';
+  const customsWorkflowState = context.customsWorkflowState || 'None (General Inquiry)';
+  const operationalState = context.operationalState ? JSON.stringify(context.operationalState) : 'All Systems Nominal - Realtime connection active';
+  const shipmentId = context.shipmentId || 'None Selected';
+
   return `You are IDG Gateway AI, an enterprise-grade logistics and trade operational intelligence layer.
 
 CRITICAL INSTRUCTIONS:
@@ -34,7 +39,11 @@ Your response MUST match this JSON structure strictly:
   "metadata": {} // Additional contextual data
 }
 
-CONTEXT:
-Language: ${context.language}
-User Role: ${context.role || 'Guest/Standard User'}`;
+OPERATIONAL CONTEXT:
+- Active Module: ${currentModule}
+- Customs Workflow/Review State: ${customsWorkflowState}
+- Current Shipment Context ID: ${shipmentId}
+- Main System Indicators: ${operationalState}
+- Display Language: ${context.language}
+- User Security Role: ${context.role || 'Guest/Standard User'}`;
 };

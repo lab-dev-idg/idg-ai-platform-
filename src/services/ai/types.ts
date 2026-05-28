@@ -4,6 +4,10 @@ export interface AIContext {
   role?: string;
   workspaceState?: unknown;
   shipmentData?: unknown;
+  currentModule?: string;
+  customsWorkflowState?: string;
+  shipmentId?: string;
+  operationalState?: unknown;
 }
 
 export interface AIMessage {

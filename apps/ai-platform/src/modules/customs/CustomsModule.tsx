@@ -1,8 +1,40 @@
 import React, { useState } from 'react';
 import { CustomsCalculator, AdminPanel } from './features';
 import { cn } from '@idg/ui';
-import { Calculator, ShieldAlert, Cpu, Layers, BadgeAlert, Sparkles } from 'lucide-react';
+import { Calculator, ShieldAlert, Cpu, Layers, BadgeAlert, Sparkles, Lock } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
+
+interface WorkflowItem {
+  id: string;
+  declarationId: string;
+  hsCode: string;
+  status: 'APPROVED' | 'UNDER_REVIEW' | 'PENDING' | 'ESCALATED';
+  broker: string;
+  date: string;
+  itemsCount: number;
+}
+
+interface OperationalEvent {
+  id: string;
+  timestamp: string;
+  type: 'SHIPMENT' | 'CUSTOMS' | 'AI_NOTICE' | 'AUDIT';
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  message: string;
+  hash?: string;
+}
+
+const LIVE_WORKFLOWS: WorkflowItem[] = [
+  { id: '1', declarationId: 'IQ-DEC-2026-0041', hsCode: '8517.18.00', status: 'APPROVED', broker: 'Al-Mansour Freight Ltd', date: '25-28 08:30', itemsCount: 412 },
+  { id: '2', declarationId: 'IQ-DEC-2026-0042', hsCode: '8471.30.10', status: 'UNDER_REVIEW', broker: 'Mesopotamia Brokerage', date: '25-28 09:12', itemsCount: 88 },
+  { id: '3', declarationId: 'IQ-DEC-2026-0043', hsCode: '3004.90.00', status: 'PENDING', broker: 'Erbil Trade Logistics', date: '25-28 10:05', itemsCount: 1540 },
+  { id: '4', declarationId: 'IQ-DEC-2026-0044', hsCode: '8703.23.19', status: 'ESCALATED', broker: 'Basra Shipping Union', date: '25-28 10:48', itemsCount: 14 }
+];
+
+const OPERATIONAL_EVENTS: OperationalEvent[] = [
+  { id: 'evt_1', timestamp: '10:48:15', type: 'AUDIT', severity: 'CRITICAL', message: 'HS tariff discrepancy flagged on auto-assessment for cargo 8703.', hash: 'sha256:0d6c...f4a1' },
+  { id: 'evt_2', timestamp: '10:15:30', type: 'AI_NOTICE', severity: 'INFO', message: 'HS Classification suggestions auto-optimized for telecommunication hardware.' },
+  { id: 'evt_3', timestamp: '09:40:12', type: 'CUSTOMS', severity: 'WARNING', message: 'Umm Qasr South Terminal reporting peak custom clearance volume.' }
+];
 
 export function CustomsModule() {
   const [activeTab, setActiveTab] = useState<'calculator' | 'admin'>('calculator');
@@ -103,35 +135,83 @@ export function CustomsModule() {
       </div>
 
       {activeTab === 'calculator' ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg bg-white/70 backdrop-blur-md shadow-2xs hover:bg-white transition-all border-slate-100" id="customs-compliance-card">
-              <h3 className="text-sm font-bold text-[#071739] flex items-center gap-2">
-                <span className="w-1 h-3 rounded bg-blue-500" />
-                {lang === 'ku' ? "دەرپەڕاندن و ترانزێت" : "الترخيص والعبور اللوجستي"}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-semibold">
-                {lang === 'ku' 
-                  ? "کاری ڕێکخستنی مانیفێست بەپێی ستانداردە جیهانییەکان و مۆڵەتنامەکانی هاوردەی نوێ."
-                  : "تنظيم المنفست الجمركي ومطابقة شحنات العبور مع معايير ترخيص هيئة المنافذ."}
-              </p>
-            </div>
-
-            <div className="p-4 border rounded-lg bg-white/70 backdrop-blur-md shadow-2xs hover:bg-white transition-all border-slate-100" id="customs-tariffs-card">
-              <h3 className="text-sm font-bold text-[#071739] flex items-center gap-2">
-                <span className="w-1 h-3 rounded bg-blue-500" />
-                {lang === 'ku' ? "پۆلێنکردنی تاریفە و کۆدی HS" : "تصنيف التعرفة ورموز النظام المنسق"}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-semibold">
-                {lang === 'ku'
-                  ? "پۆلێنکردنی کاڵا بازرگانییەکان، جێبەجێکردنی باجی گومرگی دروست، و کۆنتڕۆڵی ڕێگرییەکان."
-                  : "توجيه تصنيف وترميز البضائع، فرض الرسوم الدقيقة، وتشديد معايير المراقبة الجمركية."}
-              </p>
-            </div>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          {/* Main Calculator */}
+          <div className="xl:col-span-8 bg-white border rounded-[24px] p-6 shadow-xs border-slate-100/80 dark:border-slate-800">
+            <CustomsCalculator />
           </div>
 
-          <div className="bg-white border rounded-[24px] p-6 shadow-xs border-slate-100/80 dark:border-slate-800">
-            <CustomsCalculator />
+          {/* Right Operational Cockpit Panel */}
+          <div className="xl:col-span-4 space-y-4">
+            {/* Live Customs Workflows */}
+            <div className="bg-white border rounded-[24px] p-5 shadow-xs border-slate-100/80 dark:border-slate-800">
+              <h3 className="text-xs font-black text-[#071739] dark:text-white uppercase tracking-wider flex items-center justify-between mb-3.5 pb-2 border-b border-slate-100 select-none">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-3 rounded bg-[#0066FF]" />
+                  {lang === 'ku' ? "دۆخی رەوتی گومرگ" : "سلسلة الإجراءات الجمركية"}
+                </span>
+                <span className="text-[9px] bg-blue-50 text-[#0066FF] px-1.5 rounded font-mono font-bold select-none">4 ACTIVE</span>
+              </h3>
+
+              <div className="space-y-3">
+                {LIVE_WORKFLOWS.map((item) => {
+                  let badgeStyle = "bg-slate-50 text-slate-600 border-slate-200/60";
+                  if (item.status === 'APPROVED') badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+                  if (item.status === 'UNDER_REVIEW') badgeStyle = "bg-blue-50 text-[#0066FF]/90 border-blue-200/60";
+                  if (item.status === 'ESCALATED') badgeStyle = "bg-rose-50 text-rose-700 border-rose-200/60";
+
+                  return (
+                    <div key={item.id} className="p-3 border rounded-xl hover:bg-slate-50/50 transition-all border-slate-100/80 flex flex-col gap-2 relative">
+                      <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                        <span className="text-slate-700">{item.declarationId}</span>
+                        <span className={`px-2 py-0.5 rounded text-[8px] border font-black tracking-wide ${badgeStyle}`}>
+                          {item.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                        <span>{lang === 'ku' ? "بریکار:" : "المخلص:"} {item.broker}</span>
+                        <span>{item.date}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 mt-1">
+                        <span>HS: {item.hsCode}</span>
+                        <span>Qty: {item.itemsCount} pcs</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sovereign Operations Audit Stream */}
+            <div className="bg-white border rounded-[24px] p-5 shadow-xs border-slate-100/80 dark:border-slate-800">
+              <h3 className="text-xs font-black text-[#071739] dark:text-white uppercase tracking-wider flex items-center gap-1.5 mb-3.5 pb-2 border-b border-slate-100 select-none">
+                <span className="w-1.5 h-3 rounded bg-amber-500" />
+                {lang === 'ku' ? "رووداوەکانی وەزارەتی گومرگ" : "أحداث التدقيق السيادي"}
+              </h3>
+
+              <div className="space-y-3">
+                {OPERATIONAL_EVENTS.map((evt) => (
+                  <div key={evt.id} className="flex gap-2.5 items-start text-[10px] leading-relaxed">
+                    <span className="text-[9px] text-slate-400 font-mono pt-0.5">{evt.timestamp}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          evt.severity === 'CRITICAL' ? 'bg-rose-500 animate-pulse' : 
+                          evt.severity === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
+                        }`} />
+                        <span className="font-bold text-slate-700">{evt.message}</span>
+                      </div>
+                      {evt.hash && (
+                        <div className="mt-1 text-[8px] font-mono text-slate-400 select-all border border-dashed border-slate-100 p-1 bg-slate-50/50 rounded flex items-center justify-between">
+                          <span>{evt.hash}</span>
+                          <span className="text-[7px] text-[#0066FF] flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> SECURE</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ) : (

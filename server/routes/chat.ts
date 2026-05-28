@@ -43,6 +43,10 @@ chatRouter.post('/stream', async (req: Request, res: Response) => {
       language: context?.language || 'ku',
       userId: context?.userId,
       role: context?.role,
+      currentModule: context?.currentModule,
+      customsWorkflowState: context?.customsWorkflowState,
+      shipmentId: context?.shipmentId,
+      operationalState: context?.operationalState,
     };
 
     const stream = orch.streamResponse(messages, defaultContext);

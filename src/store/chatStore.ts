@@ -1,9 +1,15 @@
 import { create } from 'zustand';
+import { useSettingsStore } from './settingsStore';
 
 export interface ChatMessage {
   id?: string;
   role: 'user' | 'model';
   text: string;
+  action?: 'DISPLAY_MESSAGE' | 'EXECUTE_TOOL' | 'REQUIRE_INPUT';
+  payload?: unknown;
+  confidence?: number;
+  metadata?: unknown;
+  citations?: string[];
 }
 
 interface ChatState {
@@ -55,12 +61,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
         parts: [{ text: msg.text }]
       }));
 
+      const lang = useSettingsStore.getState().lang || 'ku';
+      const isCustomsMode = typeof window !== 'undefined' && window.location.pathname === '/customs';
+      const currentModule = isCustomsMode ? 'Customs & Tariff Central Hub' : 'Unified Logistics Dashboard (Main)';
+      const customsWorkflowState = isCustomsMode 
+        ? 'Active Customs Workspace (Calculations and Border Gateway Regulation)' 
+        : 'General Logistics Inquiries';
+
+      const activeContext = {
+        language: lang,
+        currentModule,
+        customsWorkflowState,
+        operationalState: {
+          realtimeConnectivity: "CONNECTED",
+          aiAvailability: "HIGH",
+          gatewayHealth: "OPTIMAL",
+          customsWorkflow: isCustomsMode ? "ACTIVE_WORKFLOW" : "IDLE"
+        }
+      };
+
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: messageText,
-          history: chatHistory
+          history: chatHistory,
+          context: activeContext
         }),
       });
 
@@ -108,6 +134,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
           const lastMsg = newMessages[newMessages.length - 1];
           if (lastMsg && lastMsg.role === 'model') {
             lastMsg.text = displayString;
+          }
+          return { messages: newMessages };
+        });
+      }
+
+      // Final post-stream parse to capture the structured AI action model fields
+      try {
+        const parsed = JSON.parse(fullText);
+        set((state) => {
+          const newMessages = [...state.messages];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.role === 'model') {
+            lastMsg.text = parsed.payload?.text || parsed.text || lastMsg.text;
+            lastMsg.action = parsed.action || 'DISPLAY_MESSAGE';
+            lastMsg.payload = parsed.payload;
+            lastMsg.confidence = parsed.confidence || 0.95;
+            lastMsg.metadata = parsed.metadata || {};
+            lastMsg.citations = parsed.citations || [];
+          }
+          return { messages: newMessages };
+        });
+      } catch (jsonErr) {
+        console.warn("Done streaming, but content was not valid JSON. Keeping text-fallback.", jsonErr);
+        
+        // Attempt manual regex extraction of structure as fallback
+        set((state) => {
+          const newMessages = [...state.messages];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.role === 'model' && !lastMsg.action) {
+            lastMsg.action = 'DISPLAY_MESSAGE';
+            lastMsg.confidence = 0.90;
+            lastMsg.metadata = { parsedViaFallback: true };
           }
           return { messages: newMessages };
         });
