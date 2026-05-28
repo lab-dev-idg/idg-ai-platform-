@@ -14,3 +14,8 @@ export * from './tools/ToolEventEmitter';
 export * from './tools/ToolExecutionEngine';
 export { ContextPipeline } from './context/ContextPipeline';
 export { AIActionRouter } from './router/AIActionRouter';
+export * from './orchestrator/ContextIsolator';
+export * from './orchestrator/ToolExecutionQueue';
+export * from './orchestrator/ResponseValidationEngine';
+export * from './orchestrator/RAGControlGate';
+export * from './orchestrator/AIOrchestrator';
