@@ -22,3 +22,8 @@ export * from './orchestrator/AIOrchestrator';
 export * from './kernel/KernelTelemetry';
 export * from './kernel/KernelGovernor';
 export * from './kernel/AIKernel';
+export * from './sovereign/DeploymentControlPlane';
+export * from './sovereign/DistributedNodeRegistry';
+export * from './sovereign/SovereignDataGovernor';
+export * from './sovereign/DisasterRecoveryEngine';
+export * from './sovereign/SovereignAuditExporter';
