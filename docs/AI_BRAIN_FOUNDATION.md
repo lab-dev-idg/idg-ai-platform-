@@ -176,3 +176,145 @@ The components established in Phase 12-A map directly to future production RAG s
     Ensures that regulations indexed in Arabic and Kurdish maintain parent-child links to matching English translations using cross-lingual embeddings (e.g. multilingual-e5).
 3.  **Governed Citation Anchoring**:
     RAG engines must output legal references that align strictly with the compiled `citations` schema. Any recommendation lacking formal Gazette or Decree references is omitted from critical business flows.
+
+---
+
+## 6. Phase 12-B Expansion: Context Fusion & Intelligence Routing
+
+Phase 12-B introduces unified decision pipelines and validation gates, enabling the gateway to securely analyze and compile prompt context packages before server execution begins.
+
+### A. Context Fusion Engine
+The `ContextFusion` layer combines user classifications, local intents, and runtime telemetry variables into an immutable `AIContextSnapshot`. This provides a stable, unified operational envelope that prevents the chat system from relying on raw client inputs or unvalidated parameters during transaction processing.
+
+```
+┌───────────────────────────┐      ┌──────────────────────────┐
+│        Local Intent       │      │  Runtime Client Context  │
+└─────────────┬─────────────┘      └────────────┬─────────────┘
+              │                                 │
+              └────────────────┬────────────────┘
+                               ▼
+                    [ Context Fusion Engine ]
+                               │
+                               ▼
+               [ Immutable AIContextSnapshot ]
+```
+
+### B. Decision Engine & Intelligent Router
+The `DecisionEngine` evaluates the snapshot to execute routing plans, RAG query flags, and programmatic tool allocations.
+
+```json
+{
+  "route": "/customs",
+  "requiresRAG": true,
+  "requiresTool": true,
+  "riskLevel": "MEDIUM",
+  "confidence": 0.85,
+  "fallbackStrategy": "SAFE_MODE"
+}
+```
+
+### C. Policy Gate Security Controls
+The `PolicyGate` acts as a firewall preceding AI execution. By auditing clearance requirements dynamically, it intercepts potential privilege escalation, enforcing four standard actions:
+*   **ALLOW**: Clearances verified; full access and tool triggers unlocked.
+*   **DOWNGRADE**: Fall back to informational public contexts; sanitize and withhold corporate indices.
+*   **ESCALATE**: Re-route processing to human operators in priority helpdesk queues.
+*   **BLOCK**: Terminate transactions immediately with professional, secure refusals.
+
+### D. Dynamic Prompt Compiler v1
+The `PromptCompiler` synthesizes the `AIContextSnapshot`, `DecisionOutput`, and `SecurityStatus` into structured system instructions. It automatically configures localized language mappings (Sorani Kurdish, Standard Arabic, or English), enforces active user clearances, applies security fallback modifiers, and anchors outputs to strict markdown and structured action constraints.
+
+---
+
+## 7. Phase 12-C Expansion: Knowledge Brain & RAG Foundation
+
+Phase 12-C implements standard interfaces, ingestion pipelines, metadata schemas, and retrieval checks mapping domain security barriers to real-time AI context loops.
+
+### A. Knowledge Domains and Policies
+Sovereign facts are structured across 5 distinct domains matching strict authentication levels:
+*   **Strategic**: Strategic national developments (e.g., Al-Faw Port Shipping corridor coordinates). Available from Level-1 upward.
+*   **Operational**: Real-time terminal checkpoint processes and backup logs. Available from Level-1 upward.
+*   **Customs**: Ad-valorem tariffs, custom tax exemptions, and HS schedules under the 2026 Customs Law. Available publicly (Level-0+).
+*   **Compliance**: Anti-money laundering checkups and CBI digital escrow regulations. Restricts access to Level-2+.
+*   **Identity**: Core cryptographic biometrics (MOSS-ID). Restricted to Level-3+ governmental or banking delegates with dual checks enabled.
+
+### B. Ingestion Pipeline & Script Standardizations
+The text normalization pipeline standardizes complex multilingual strings to align Arabic and Kurdish orthographies. For example:
+*   **Arabic**: Strips harakat, normalizes variants of Alif (`أ|إ|آ` to `ا`), standardized Taa Marbuta (`ة` to `ه`), and maps Alif Maqsurah (`ى` to `ي`).
+*   **Kurdish (Sorani)**: Replaces complex typographic letters to match standard keys (`ھ` to `ه`, `ى` to `y`, `ك` to `ک`).
+
+Ingested documents are split into discrete search chunks under configurable strategies (`LOGICAL_SECTION` splitting by articles, or `FIXED_TOKEN` character boundaries with overlapping margins).
+
+### C. Active Retrieval & Citations Verification
+The RAG retrieval pipeline applies dynamic authorization barriers:
+1.  **Authorize Domain Check**: Prior to matching, any document belonging to a domain that requires a clearance level higher than the active session's clearance is omitted.
+2.  **Hybrid Token Matches**: Performs keyword-based frequency matches combined with tag correlations to calculate relevance.
+3.  **Auditable Citations**: Automatically yields highly trace-checked metadata references containing the source database, specific law clauses, confidence scoring, and document classification levels.
+
+---
+
+## 8. Phase 12-D Expansion: Secure Tool Execution & Governance Layer
+
+Phase 12-D establishes the programmatic execution boundaries enabling the IDG AI engine to interface with back-office and border systems safely.
+
+### A. Central Tool Registry
+Tools are registered under strict structural constraints, each mapping to explicit user matrices, required clearance floors, inputs validation schemas, and expected returns:
+*   **`customs.calculateDuty`**: Computes standard cargo duties, sales tax, processing levies for cars and generic shipments under 2026 tariff formulas. (Required Level: 0+)
+*   **`customs.classifyHS`**: Generates closest matching HS digits using natural text descriptions. (Required Level: 0+)
+*   **`logistics.trackShipment`**: Locates active shipment manifests, reporting port terminal checkpoints. (Required Level: 1+)
+*   **`compliance.checkSanctions`**: Screens companies or vessels against the CBI regulatory hold directories. (Required Level: 2+)
+*   **`notifications.dispatch`**: Transmits instant alerts or status banners directly to local port terminals. (Required Level: 2+)
+*   **`audit.logEvent`**: Records crucial system transactions onto decentralized indexing ledgers. (Required Level: 2+)
+
+### B. Safety Guard Boundary Engine
+Before any action commences, the `SafetyGuardSystem` audits the payload:
+1.  **Clearance Verification**: Checks whether the caller's clearance level equals or exceeds the tool's required level.
+2.  **Role Authorization**: Confirms the caller's specific `UserType` is explicitly authorized in the tool registry.
+3.  **Threat Analysis**: Intersects with the dynamic threat levels generated by the `DecisionEngine`. If risk is flagged as `'CRITICAL'`, high-sensitivity tools are frozen immediately in favor of automated operator escalation.
+4.  **Event Mitigation**: If any breach or unauthenticated action is intercepted, the system drops the operation and dispatches a `'security.violation.detected'` operational alert.
+
+### C. Execution Engine & Structured Returns
+The `ToolExecutionEngine` handles safe functional simulations. On successful validation, it computes real duties, runs status mockups, matches test sanctions, and issues operational event broadcasts using the `ToolEventEmitter`. Every completed operation registers an immutable block-audit signature returning:
+
+```json
+{
+  "action": "EXECUTE_TOOL_SUCCESS",
+  "payload": {
+    "toolId": "customs.calculateDuty",
+    "success": true,
+    "data": {
+      "totalDutiesUSD": 1500,
+      "salesTaxUSD": 575,
+      "regulatoryFeesUSD": 450,
+      "totalChargesUSD": 2525
+    }
+  },
+  "status": "SUCCESS",
+  "confidence": 0.95,
+  "auditTrail": {
+    "traceId": "IDG-EXEC-125042-2026",
+    "systemTraceId": "IDG-TR-88204-2026",
+    "userType": "Business",
+    "clearanceLevel": 1,
+    "toolId": "customs.calculateDuty",
+    "actionCode": "ALLOW",
+    "timestamp": "2026-05-28T03:30:00Z",
+    "classificationLabel": "Authorized Operational (Level-1)",
+    "checksumConsensusToken": "sha256:sys_f98ds"
+  },
+  "timestamps": {
+    "receivedAt": "2026-05-28T03:30:00Z",
+    "completedAt": "2026-05-28T03:30:00.042Z",
+    "durationMs": 42
+  }
+}
+```
+
+### D. Operational Event System
+Decoupled back-office operations communicate using an event bus (`ToolEventEmitter`). External listeners easily subscribe to capture critical system outputs:
+*   `shipment.updated`
+*   `customs.review.started`
+*   `customs.review.completed`
+*   `compliance.alert`
+*   `ai.action.executed`
+*   `security.violation.detected`
+
