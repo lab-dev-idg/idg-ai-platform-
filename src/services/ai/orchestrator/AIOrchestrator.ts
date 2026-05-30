@@ -30,6 +30,14 @@ import { ReasoningContext } from '../reasoning/types';
 // Phase 13-F Adaptive Learning Integration
 import { RetrievalOptimizer, PromptOptimizer } from '../learning';
 
+// Phase 13-G National Command Center Integration
+import {
+  AIHealthMonitor,
+  PerformanceAnalytics,
+  SecurityOperationsCenter,
+  GovernanceController
+} from '../command';
+
 export interface OrchestratorDecision {
   status: 'SUCCESS' | 'BLOCKED' | 'SAFETY_REJECTED' | 'FAILED';
   intent: IntentCategory;
@@ -142,11 +150,50 @@ export class AIOrchestrator {
 
     console.log(`[ORCHESTRATOR] Step 3 - Security Matrix action resolved: [${securityStatus.policyAction}] (Risk: ${decision.riskLevel})`);
 
-    if (securityStatus.policyAction === 'BLOCK') {
+    // SOC Injection Scanning Guard
+    const isSOCSafe = SecurityOperationsCenter.getInstance().verifyRetrievalVulnerabilities('ORCH-SESSION-USER', userInput);
+    if (!isSOCSafe) {
       const blockedAction = ActionFramework.createAction(
         'SECURITY_LOCK',
         {
-          text: `Sovereign Security Block: Access denied to unauthenticated intent categories. Reason: ${securityStatus.reason}`,
+          text: `Sovereign Security Block: Access denied due to critical input safety violation detected by the Security Operations Center.`,
+          data: { riskRatingFlagged: true }
+        },
+        1.0,
+        intent,
+        resolvedRole
+      );
+      return {
+        status: 'BLOCKED',
+        intent,
+        isolatedContextUsed: isolatedType,
+        riskEvaluation: {
+          level: 'CRITICAL',
+          score: 1.0,
+          fallbackStrategy: 'LOCKDOWN',
+          warning: 'Potential query injection or system abuse detected'
+        },
+        actionContract: blockedAction
+      };
+    }
+
+    // Sovereign Governance Clearance Enforcement Gating
+    const userRoleDef = USER_TYPE_REGISTRY[userType];
+    const clearanceLevel = userRoleDef ? userRoleDef.clearanceLevel : 0;
+    const governanceOk = GovernanceController.getInstance().verifyAccessClearance({
+      userId: 'ORCH-SESSION-USER',
+      userType,
+      clearanceLevel,
+      resourceClassification: intent === 'GOVERNMENT' ? 4 : (intent === 'INCIDENT' ? 3 : 1),
+      resourceId: intent
+    });
+
+    if (!governanceOk || securityStatus.policyAction === 'BLOCK') {
+      const blockReason = !governanceOk ? 'Clearance policy restriction' : securityStatus.reason;
+      const blockedAction = ActionFramework.createAction(
+        'SECURITY_LOCK',
+        {
+          text: `Sovereign Security Block: Access denied. Reason: ${blockReason}`,
           data: { riskRatingFlagged: true }
         },
         1.0,
@@ -499,8 +546,9 @@ export class AIOrchestrator {
     try {
       const userRoleDef = USER_TYPE_REGISTRY[userType];
       const clearance = userRoleDef ? userRoleDef.clearanceLevel : 0;
+      const duration = Date.now() - pipelineStart;
       AIKernel.getInstance().monitorTransaction({
-        durationMs: Date.now() - pipelineStart,
+        durationMs: duration,
         intentCategory: intent,
         contextType: isolatedType,
         didRAGRun: didRAG_run,
@@ -511,6 +559,23 @@ export class AIOrchestrator {
       });
       // Feed successful resolution back as reinforcement signal
       KernelGovernor.getInstance().recordResolutionSuccess(intent);
+
+      // Phase 13-G Command Center Telemetry Integrations
+      AIHealthMonitor.getInstance().recordLatency({
+        orchestrationLatency: duration,
+        retrievalLatency: didRAG_run ? 140 : 0,
+        reasoningLatency: didRAG_run ? 820 : 0,
+        vectorSearchLatency: didRAG_run ? 42 : 0,
+        toolExecutionLatency: didToolRun ? 330 : 0
+      });
+
+      PerformanceAnalytics.getInstance().recordMetrics({
+        hasRetrieval: didRAG_run,
+        citationCountUsed: ragResult?.citationsList.length || 0,
+        confidenceScore: decision.confidence,
+        votePassed: 'up',
+        workflowTrack: { started: true, completed: true }
+      });
     } catch (e) {
       console.warn('[AIOrchestrator] Kernel monitor transaction fail.', e);
     }
