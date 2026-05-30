@@ -27,6 +27,9 @@ import { AnswerSynthesizer } from '../reasoning/AnswerSynthesizer';
 import { ReasoningAuditTrail } from '../reasoning/ReasoningAuditTrail';
 import { ReasoningContext } from '../reasoning/types';
 
+// Phase 13-F Adaptive Learning Integration
+import { RetrievalOptimizer, PromptOptimizer } from '../learning';
+
 export interface OrchestratorDecision {
   status: 'SUCCESS' | 'BLOCKED' | 'SAFETY_REJECTED' | 'FAILED';
   intent: IntentCategory;
@@ -402,6 +405,15 @@ export class AIOrchestrator {
         console.log(`[ORCHESTRATOR] Routing matching entities into the Phase 13-E Advanced Reasoning Core.`);
         const userRoleDef = USER_TYPE_REGISTRY[userType];
         const clearanceLevel = userRoleDef ? userRoleDef.clearanceLevel : 0;
+
+        // Adaptive Optimization Recommendation
+        const recommendedRetrieval = RetrievalOptimizer.getInstance().recommendStrategy(userInput);
+        const recommendedPrompt = PromptOptimizer.getInstance().recommendStrategy(userInput);
+        console.log(`[ORCHESTRATOR] [ADAPTIVE] Recommended Retrieval Strategy: ${recommendedRetrieval}`);
+        console.log(`[ORCHESTRATOR] [ADAPTIVE] Recommended Prompt Layout: ${recommendedPrompt}`);
+        
+        await RetrievalOptimizer.getInstance().recordRetrievalRun(recommendedRetrieval, 0.85);
+        await PromptOptimizer.getInstance().recordPromptUsage(recommendedPrompt);
 
         // 1. Evidence Collection
         const evidenceCollector = EvidenceCollector.getInstance();

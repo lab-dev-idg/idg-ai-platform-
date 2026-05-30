@@ -20,7 +20,7 @@ import {
   CitationFormat
 } from './types';
 import { CitationEngine } from './CitationEngine';
-import { ConfidenceScorer } from './ConfidenceScorer';
+import { ConfidenceCalibration } from '../learning/ConfidenceCalibration';
 
 export class ReasoningEngine {
   private static instance: ReasoningEngine;
@@ -184,7 +184,6 @@ export class ReasoningEngine {
     const citations: Citation[] = [];
 
     const citationEngine = CitationEngine.getInstance();
-    const confidenceScorer = ConfidenceScorer.getInstance();
 
     const evidenceUsed: EvidenceRecord[] = bundle.records;
 
@@ -223,7 +222,20 @@ export class ReasoningEngine {
       findings.push(`System successfully resolved ${conflictReport.resolvedConflicts.length} statutory rule collision(s) internally.`);
     }
 
-    const scorerResult = confidenceScorer.calculateConfidence(bundle, conflictReport);
+    const unresolved = conflictReport.unresolvedConflicts.length;
+    const resolved = conflictReport.resolvedConflicts.length;
+    const totalC = unresolved + resolved;
+    let consistency = 1.00;
+    if (totalC > 0) {
+      consistency = resolved / totalC;
+      consistency = Math.max(0.10, consistency - (unresolved * 0.30));
+    }
+
+    const calibrationEngine = ConfidenceCalibration.getInstance();
+    const scorerResult = calibrationEngine.calibrateConfidence({
+      evidenceQuality: bundle.averageTrustScore,
+      reasoningConsistency: consistency
+    });
 
     let summary = `This legal/customs advisory is formulated based on ${evidenceUsed.length} authoritative national sources. `;
     if (scorerResult.score >= 0.8) {
