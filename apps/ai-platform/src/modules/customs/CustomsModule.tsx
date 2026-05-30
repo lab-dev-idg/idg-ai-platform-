@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CustomsCalculator, AdminPanel, GoogleDrivePanel } from './features';
+import { CustomsCalculator, AdminPanel, GoogleDrivePanel, AICustomsImportAssistant } from './features';
 import { cn } from '@idg/ui';
 import { Calculator, ShieldAlert, Cpu, Layers, BadgeAlert, Sparkles, Lock, Cloud } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -37,7 +37,7 @@ const OPERATIONAL_EVENTS: OperationalEvent[] = [
 ];
 
 export function CustomsModule() {
-  const [activeTab, setActiveTab] = useState<'calculator' | 'admin' | 'drive'>('calculator');
+  const [activeTab, setActiveTab] = useState<'calculator' | 'admin' | 'drive' | 'assistant'>('assistant');
   const { lang } = useSettingsStore();
 
   const customsTranslations = {
@@ -47,6 +47,7 @@ export function CustomsModule() {
       calculatorTab: "یاساکاری و حیسابکەر",
       adminTab: "یاسا و کارگێڕی مەرز",
       driveTab: "هەوری گوگڵ درایڤ",
+      assistantTab: "ڕاوێژکاری گومرگی هۆشمەند (AI Assistant)",
       domain: "کەرتی کارکردن: دەسەڵاتی دەروازە گشتییەکان",
       compliance: "پابەندبوون: پارێزراو",
       version: "وەشان: v2.6.0",
@@ -58,6 +59,7 @@ export function CustomsModule() {
       calculatorTab: "الحاسبة وتقدير الرسوم",
       adminTab: "السياسات الإدارية والتعريفية",
       driveTab: "سحابة Google Drive",
+      assistantTab: "مساعد الاستيراد الذكي (AI Customs)",
       domain: "نطاق العمل: سلطة الجمارك العراقية",
       compliance: "الامتثال: مؤمن بالكامل",
       version: "الإصدار: v2.6.0",
@@ -96,7 +98,18 @@ export function CustomsModule() {
           </div>
 
           {/* Swithers inside operations header header area */}
-          <div className="flex p-1 bg-[#0b245c] rounded-xl border border-white/10 self-start md:self-auto shrink-0 animate-fade-in" id="customs-module-tabs">
+          <div className="flex p-1 bg-[#0b245c] rounded-xl border border-white/10 self-start md:self-auto shrink-0 animate-fade-in gap-1" id="customs-module-tabs">
+            <button
+              onClick={() => setActiveTab('assistant')}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                activeTab === 'assistant' 
+                  ? "bg-[#0066FF] text-white font-bold shadow-md shadow-blue-500/20" 
+                  : "text-slate-200 hover:bg-white/5 hover:text-white"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> {localText.assistantTab}
+            </button>
             <button
               onClick={() => setActiveTab('calculator')}
               className={cn(
@@ -147,7 +160,9 @@ export function CustomsModule() {
         </div>
       </div>
 
-      {activeTab === 'calculator' ? (
+      {activeTab === 'assistant' ? (
+        <AICustomsImportAssistant />
+      ) : activeTab === 'calculator' ? (
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           {/* Main Calculator */}
           <div className="xl:col-span-8 bg-white border rounded-[24px] p-6 shadow-xs border-slate-100/80 dark:border-slate-800">
