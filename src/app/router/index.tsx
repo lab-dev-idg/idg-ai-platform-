@@ -1,10 +1,8 @@
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Code splitting dynamic imports for optimal route chunking
-const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
-const CustomsPage = lazy(() => import("@/features/customs/pages/CustomsPage"));
-const IntelligencePage = lazy(() => import("@/features/intelligence/pages/IntelligencePage"));
+// Unified premium Workspace Layout
+const WorkspaceLayout = lazy(() => import("@/components/common/WorkspaceLayout"));
 
 // Clean elegant fallback spinner matching the IDG digital cockpit design theme
 function RouteFallback() {
@@ -29,9 +27,18 @@ export function AppRouter() {
     <BrowserRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/customs" element={<CustomsPage />} />
-          <Route path="/intelligence" element={<IntelligencePage />} />
+          <Route path="/" element={<WorkspaceLayout />} />
+          <Route path="/customs" element={<WorkspaceLayout />} />
+          <Route path="/logistics" element={<WorkspaceLayout />} />
+          <Route path="/banking" element={<WorkspaceLayout />} />
+          <Route path="/compliance" element={<WorkspaceLayout />} />
+          <Route path="/knowledge" element={<WorkspaceLayout />} />
+          <Route path="/analytics" element={<WorkspaceLayout />} />
+          <Route path="/command" element={<WorkspaceLayout />} />
+          <Route path="/admin" element={<WorkspaceLayout />} />
+          <Route path="/settings" element={<WorkspaceLayout />} />
+          <Route path="/profile" element={<WorkspaceLayout />} />
+          <Route path="/intelligence" element={<Navigate to="/analytics" replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
