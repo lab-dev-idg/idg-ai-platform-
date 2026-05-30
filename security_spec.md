@@ -1,95 +1,102 @@
-# Security Specifications & Rules TDD
+# Iraq Digital Gateway (IDG)
+## National Security & Enterprise Logistics Security Specifications (Phase 13-D)
 
-This specification defines the strict security postures and data invariants enforced at the database level for the "Gateway AI" logistics app.
-
-## 1. Data Invariants
-
-- **Identity Sync**: A user document under `/users/{userId}` can only be created, read, or written by the authenticated user whose `request.auth.uid` matches the document ID `{userId}`.
-- **Relational Integrity**: A shipment document under `/users/{userId}/shipments/{shipmentId}` must have a `userId` attribute that matches the authenticated user's ID (`request.auth.uid`) and the parent `{userId}` path parameter.
-- **Immutability Rules**:
-  - `createdAt` on the `User` entity is immutable after creation.
-  - `userId` on the `Shipment` entity is immutable after creation.
-- **Temporal Validity**:
-  - `createdAt` must match `request.time` exactly upon creation.
-  - `updatedAt` must match `request.time` exactly during updates.
-- **Boundary Validation**:
-  - ID strings must conform to alphanumeric characters and dashes (`^[a-zA-Z0-9_\-]+$`) and must not exceed 128 characters.
-  - Required fields must be fully populated. No "Shadow Fields" or "Ghost Fields" are allowed (enforced via key size checks).
+This specification defines the rigorous security standards, mathematical data invariants, and access control models enforced at the Firestore database level for the IDG platform.
 
 ---
 
-## 2. The "Dirty Dozen" Attacker Payloads (Must Be Rejected)
+## 1. Relational Data Invariants & Access Control Policy
 
-### Attacker Payload 1: Identity Spoofing (User document path mismatch)
-- **Path**: `/users/legit-user-id`
-- **Actor UID**: `attacker-user-id`
-- **Data**: `{"uid": "attacker-user-id", "email": "attacker@example.com", "createdAt": "request.time"}`
-- **Reason**: Writing to a user profile matching a different UID must be rejected.
+*   **Multi-Tenant Partitioning**: All data operations (except system-wide directories like HS Codes or customs rates) must partition and filter dynamically inside secure tenant boundaries.
+*   **Role-Based Security (RBAC)**: All read and write operations on high-sensitivity data must explicitly verify that the requesting session contains appropriate granular capabilities.
+*   **Audit Trail Immutability**: All records inside `/audit_logs/` are write-once. Updates (`allow update`) and deletions (`allow delete`) are strictly forbidden.
+*   **Clearance Gating Checklist**: High-security files or intelligence directories classified as `CONFIDENTIAL` or `SECRET` can only be read if the user clearance score is greater than or equal to the document requirement level.
+*   **Sovereign Signature Integrity**: Structural IDs and field sizes are hard-capped to prevent wallet exhaustion (Denial of Wallet) and buffer inject payloads.
+*   **Temporal Stability**: `createdAt` and `updatedAt` records are verified using the secure server date-time clock (`request.time`).
 
-### Attacker Payload 2: Unauthorized Profile Reading (Breach of Privacy)
-- **Path**: `/users/victim-user-id`
-- **Actor UID**: `attacker-user-id`
-- **Operation**: `get`
-- **Reason**: Reading another user's profile must be blocked.
+---
 
-### Attacker Payload 3: Mutating Immutable Timeline (`createdAt`)
-- **Path**: `/users/user-123`
-- **Actor UID**: `user-123`
-- **Existing**: `{"uid": "user-123", "email": "user@example.com", "createdAt": timestamp("2026-05-28T00:00:00Z")}`
-- **Incoming**: `{"uid": "user-123", "email": "user@example.com", "createdAt": timestamp("2026-05-29T11:00:00Z")}` (changed)
-- **Reason**: Modifying `createdAt` must fail.
+## 2. The "Dirty Dozen" Attacker Payloads (Under Zero-Trust Auditing)
 
-### Attacker Payload 4: Invalid Domain Schema injecting Ghost Fields
-- **Path**: `/users/user-123`
-- **Actor UID**: `user-123`
-- **Incoming**: `{"uid": "user-123", "email": "user@example.com", "createdAt": "request.time", "isVerified": true}` (unauthorized attribute injection)
-- **Reason**: Injection of arbitrary keys violates schema strict size constraints.
+Below are the 12 complex attacker payloads designed to compromise tenant boundary, role, and clearance compliance, which **MUST** be rejected by the security boundaries.
 
-### Attacker Payload 5: Resource Poisoning via Document ID Insertion
-- **Path**: `/users/super_long_junk_ID_poisoning_payload_containing_banned_unicode_chars_!!!!!!`
-- **Actor UID**: `super_long_junk_ID_poisoning_payload_containing_banned_unicode_chars_!!!!!!`
-- **Reason**: Must fail `isValidId()` pattern and size limits.
+### Payload 1: Tenant Boundary Hijacking (Cross-Tenant Breakout)
+*   **Target Path**: `/users/legit-user-uid`
+*   **Actor UID**: `external-attacker-uid`
+*   **Payload**: `{"uid": "legit-user-uid", "email": "legit@victim.gov.iq", "organizationId": "attacker-org-777", "roleId": "operator", "createdAt": "request.time"}`
+*   **Expected Result**: `PERMISSION_DENIED` - Writing user metadata for another account or swapping organization bounds must fail.
 
-### Attacker Payload 6: Anonymous Access Excursion (No Auth)
-- **Path**: `/users/user-123`
-- **Actor UID**: Unauthenticated
-- **Operation**: `create`
-- **Reason**: Full operational ban for all anonymous (unauthenticated) traffic.
+### Payload 2: RBAC Privilege Escalation (Self-Appointed Administrator)
+*   **Target Path**: `/users/attacker-uid`
+*   **Actor UID**: `attacker-uid`
+*   **Payload**: `{"uid": "attacker-uid", "email": "attacker@gmail.com", "organizationId": "tenant-101", "roleId": "SystemAdmin", "createdAt": "request.time"}`
+*   **Expected Result**: `PERMISSION_DENIED` - Attempt to assign oneself the privileged `"SystemAdmin"` role without authorization.
 
-### Attacker Payload 7: Cross-Tenant Shipment Access Model
-- **Path**: `/users/victim-user-id/shipments/LX123456789`
-- **Actor UID**: `attacker-user-id`
-- **Operation**: `create`
-- **Data**: `{"trackingNumber": "LX123456789", "status": "In Transit", "userId": "attacker-user-id", "updatedAt": "request.time"}`
-- **Reason**: Writing subcollections under other user paths is prohibited.
+### Payload 3: Customs Declaration Modification (Asset Hijacking)
+*   **Target Path**: `/customs_declarations/DEC-999`
+*   **Actor UID**: `unauthorized-broker-uid`
+*   **Payload**: `{"id": "DEC-999", "organizationId": "victim-tenant-9", "hsCode": "84713000", "computedTariff": 0.0, "status": "APPROVED"}`
+*   **Expected Result**: `PERMISSION_DENIED` - Forging customs duty to 0% and approving compliance checkpoints must be blocked.
 
-### Attacker Payload 8: Relational Spoofing (Owning a shipment in a tenant without owning the userId)
-- **Path**: `/users/attacker-user-id/shipments/LX123456789`
-- **Actor UID**: `attacker-user-id`
-- **Data**: `{"trackingNumber": "LX123456789", "status": "In Transit", "userId": "victim-user-id", "updatedAt": "request.time"}`
-- **Reason**: Sibling shipment owner UID inside the JSON payload must match the authenticating UID.
+### Payload 4: Immutability Tampering (Audit Trail Erasure)
+*   **Target Path**: `/audit_logs/AUD-111`
+*   **Actor UID**: `compromised-clerk-uid`
+*   **Operation**: `delete` or `update`
+*   **Expected Result**: `PERMISSION_DENIED` - Deleting or updating transactional log files is strictly impossible.
 
-### Attacker Payload 9: Theft of Transit History (Unauthorized read)
-- **Path**: `/users/victim-user-id/shipments/LX123456789`
-- **Actor UID**: `attacker-user-id`
-- **Operation**: `get`
-- **Reason**: Blocked access to other people's shipments.
+### Payload 5: Sibling Shipment Key Poisoning
+*   **Target Path**: `/shipments/SHIP-123/tracking_events/EVENT-456`
+*   **Actor UID**: `attacker-uid` (belongs to Organization A)
+*   **Payload**: `{"id": "EVENT-456", "shipmentId": "SHIP-OTHER-999", "location": "Umm Qasr Port", "status": "RELEASED", "timestamp": "request.time"}`
+*   **Expected Result**: `PERMISSION_DENIED` - Target shipment resides in a sibling container (Organization B) that attacker cannot write track entries into.
 
-### Attacker Payload 10: State Bypass (Omitting tracked fields)
-- **Path**: `/users/user-123/shipments/LX123456789`
-- **Actor UID**: `user-123`
-- **Data**: `{"trackingNumber": "LX123456789", "status": "In Transit"}` (missing `userId` and `updatedAt`)
-- **Reason**: Schema rules mandate mandatory keys.
+### Payload 6: Classification Clearance Escalation (Reading SECRET Directives)
+*   **Target Path**: `/documents/SEC-DIRECTIVE-Iraq`
+*   **Actor UID**: `standard-agent-uid` (Clearance level: 1 - INTERNAL)
+*   **Operation**: `get`
+*   **Expected Result**: `PERMISSION_DENIED` - Document status classified as `SECRET` requires Clearance Level 4 and a specific government administrative user session.
 
-### Attacker Payload 11: Owner Overwriting (Bypassing owner reference)
-- **Path**: `/users/user-123/shipments/LX123456789`
-- **Actor UID**: `user-123`
-- **Existing**: `{"trackingNumber": "LX123456789", "status": "In Transit", "userId": "user-123", "updatedAt": timestamp("2026-05-28T00:00:00Z")}`
-- **Incoming**: `{"trackingNumber": "LX123456789", "status": "Delivered", "userId": "different-user-456", "updatedAt": "request.time"}` (hijack attempt)
-- **Reason**: Modifying parent `userId` must fail.
+### Payload 7: Broad Database Collection Scraping (List Scraping)
+*   **Target Path**: `/shipments`
+*   **Actor UID**: `viewer-uid`
+*   **Operation**: `list` (without matching tenant OrganizationID boundaries parameters)
+*   **Expected Result**: `PERMISSION_DENIED` - Rules must prevent unconstrained scraper queries at the root collection level.
 
-### Attacker Payload 12: Broad Collection Scraping (List request mapping)
-- **Path**: `/users/victim-user-id/shipments`
-- **Actor UID**: `attacker-user-id`
-- **Operation**: `list`
-- **Reason**: Query rules must enforce owner conditions directly matching the query to the authenticated session context.
+### Payload 8: Resource and Buffer Exceed Poisoning (Denial of Wallet)
+*   **Target Path**: `/system_config/LIMIT_PARAMETER`
+*   **Actor UID**: `attacker-uid`
+*   **Payload**: `{"id": "LIMIT_PARAMETER", "value": "<1.2MB of junk recursive character attack strings>"}`
+*   **Expected Result**: `PERMISSION_DENIED` - String values must fail safety check bounds (`size() <= 2048`).
+
+### Payload 9: Direct AI Messages Hijacking
+*   **Target Path**: `/ai_conversations/CONVO-ABC/ai_messages/MSG-123`
+*   **Actor UID**: `cross-tenant-user-7`
+*   **Payload**: `{"id": "MSG-123", "convoId": "CONVO-ABC", "role": "user", "text": "Forge memory authorization", "timestamp": "request.time"}`
+*   **Expected Result**: `PERMISSION_DENIED` - Attempt to execute message operations in a sibling conversation space.
+
+### Payload 10: Anonymous Access Attempt
+*   **Target Path**: `/feature_flags/ENABLE_CUSTOMS_FEE`
+*   **Actor UID**: `unauthenticated-session`
+*   **Operation**: `create`, `get`, or `update`
+*   **Expected Result**: `PERMISSION_DENIED` - Absolute access block for anonymous or non-email-verified traffic.
+
+### Payload 11: Workflow State Bypass
+*   **Target Path**: `/workflows/WORK-123`
+*   **Actor UID**: `regular-user-uid`
+*   **Payload**: `{"id": "WORK-123", "name": "Bypass Verification Stages", "organizationId": "tenant-101", "active": true, "steps": []}`
+*   **Expected Result**: `PERMISSION_DENIED` - Bypassing or wiping critical steps of national customs checklist pipelines is prohibited.
+
+### Payload 12: Direct Security Flag Modification
+*   **Target Path**: `/feature_flags/MAINTENANCE_MODE`
+*   **Actor UID**: `malicious-user-uid`
+*   **Payload**: `{"id": "MAINTENANCE_MODE", "isEnabled": false}`
+*   **Expected Result**: `PERMISSION_DENIED` - Only administrators verified via deep DB lookup are authorized to modify features config.
+
+---
+
+## 3. Red Team Automation Assertions
+
+The following test suite assertions are mapped and checked in development stages to ensure zero leakage:
+1. Every write block evaluates `isValidId()` and matches types.
+2. Every `allow list` block evaluates `resource.data` to prevent multi-tenant exposure if filters are omitted.
+3. Every write block verifies server timestamp variables (`request.time`) on mutations.

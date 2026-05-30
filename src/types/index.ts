@@ -16,3 +16,6 @@ export const IRAN_BORDER_STATUS: BorderStatus[] = [
   { name: 'Umm Qasr Port', status: 'active', waitTime: '2-3 days', description: 'Heavy vessel traffic' },
   { name: 'Erbil Airport', status: 'active', waitTime: '1-2 hours', description: 'Smooth cargo handling' },
 ];
+
+export * from './firestore';
+

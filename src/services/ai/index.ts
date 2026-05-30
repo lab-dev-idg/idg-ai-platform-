@@ -42,3 +42,14 @@ export * from './knowledge/VectorStore';
 export * from './knowledge/SemanticRetrievalService';
 export * from './knowledge/HybridRankingEngine';
 
+// Phase 13-C Reasoning Engine & Decision Pipeline exports
+export * from './reasoning/types';
+export * from './reasoning/EvidenceValidator';
+export * from './reasoning/ReasoningEngine';
+export * from './reasoning/DecisionPipeline';
+
+// Phase 13-D Trusted Sovereign Intelligence exports
+export * from './sovereign/SovereignTrustEngine';
+export * from './sovereign/IntelligenceAuditLayer';
+
+

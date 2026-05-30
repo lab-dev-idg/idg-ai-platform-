@@ -2,96 +2,560 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Global Safety Net - Default Deny
+    // ==========================================
+    // Pillar 1: Global Safety Net (Default Deny)
+    // ==========================================
     match /{document=**} {
       allow read, write: if false;
     }
     
-    // Core Helpers
+    // ==========================================
+    // GLOBAL PRIMITIVES & IDENTITY HELPERS
+    // ==========================================
     function isSignedIn() {
       return request.auth != null;
     }
     
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function emailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
     }
-    
+
+    function isOwner(userId) {
+      return emailVerified() && request.auth.uid == userId;
+    }
+
+    // Path Variable Hardening (ID poisoning preventer)
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
     
-    // User Schematized Validator
-    function isValidUser(data) {
-      return data.uid == request.auth.uid 
-        && data.email is string 
-        && data.email.size() > 0 
-        && data.email.size() <= 256 
-        && (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 256))
-        && (!data.keys().hasAny(['photoURL']) || (data.photoURL is string && data.photoURL.size() <= 2048));
+    function incoming() {
+      return request.resource.data;
     }
     
-    // Shipment Schematized Validator
-    function isValidShipment(data) {
-      return data.trackingNumber is string 
-        && data.trackingNumber.size() > 0 
-        && data.trackingNumber.size() <= 128 
-        && data.status is string 
-        && data.status.size() > 0 
-        && data.status.size() <= 128 
-        && data.userId == request.auth.uid
-        && (!data.keys().hasAny(['estimatedDelivery']) || (data.estimatedDelivery is string && data.estimatedDelivery.size() <= 128));
+    function existing() {
+      return resource.data;
     }
 
-    // Rules for /users/{userId}
+    // Deep user role lookup from secure user profile database
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getTenantId() {
+      return getUserData().organizationId;
+    }
+
+    // Bootstrapped Admin verification
+    function isAdmin() {
+      return emailVerified() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "diplomaticarbitrator@gmail.com"
+      );
+    }
+
+    // ==========================================
+    // VALIDATION HELPER BLUEPRINTS
+    // ==========================================
+    
+    function isValidOrganization(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 256
+        && data.status is string && data.status.size() <= 64;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 256
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.roleId is string && data.roleId.size() <= 128;
+    }
+
+    function isValidRole(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 256
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.permissions is list && data.permissions.size() <= 100;
+    }
+
+    function isValidPermission(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.description is string && data.description.size() <= 1024;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId == request.auth.uid
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.action is string && data.action.size() <= 256
+        && data.details is string && data.details.size() <= 4096;
+    }
+
+    function isValidNotification(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.body is string && data.body.size() <= 2048
+        && data.isRead is bool;
+    }
+
+    function isValidWorkflow(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.active is bool
+        && data.steps is list && data.steps.size() <= 50;
+    }
+
+    function isValidTask(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.workflowId is string && data.workflowId.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.status is string && data.status.size() <= 64
+        && data.title is string && data.title.size() <= 256;
+    }
+
+    function isValidTicket(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.status is string && data.status.size() <= 64;
+    }
+
+    // Shipments (Sovereign Loombenax Cargo Container)
+    function isValidShipment(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.trackingNumber is string && data.trackingNumber.size() <= 128
+        && data.status is string && data.status.size() <= 128
+        && data.userId is string && data.userId.size() <= 128;
+    }
+
+    function isValidTrackingEvent(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.shipmentId is string && data.shipmentId.size() <= 128
+        && data.location is string && data.location.size() <= 256
+        && data.status is string && data.status.size() <= 128;
+    }
+
+    function isValidCarrier(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.licenseNumber is string && data.licenseNumber.size() <= 128;
+    }
+
+    function isValidWarehouse(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.capacityLimit is number;
+    }
+
+    function isValidRoute(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.origin is string && data.origin.size() <= 256
+        && data.destination is string && data.destination.size() <= 256;
+    }
+
+    function isValidCustomsDeclaration(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.shipmentId is string && data.shipmentId.size() <= 128
+        && data.hsCode is string && data.hsCode.size() <= 64
+        && data.computedTariff is number
+        && data.status is string && data.status.size() <= 64;
+    }
+
+    function isValidCustomsRate(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.hsChapter is string && data.hsChapter.size() <= 64
+        && data.adValoremPercent is number;
+    }
+
+    function isValidHsCode(data) {
+      return data.code is string && data.code.size() <= 128
+        && data.description is string && data.description.size() <= 2048;
+    }
+
+    function isValidCustomsDocument(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.shipmentId is string && data.shipmentId.size() <= 128
+        && data.documentType is string && data.documentType.size() <= 256
+        && data.fileURL is string && data.fileURL.size() <= 2048;
+    }
+
+    function isValidCompany(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.taxNumber is string && data.taxNumber.size() <= 128;
+    }
+
+    function isValidPartner(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.country is string && data.country.size() <= 128;
+    }
+
+    function isValidVendor(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.serviceType is string && data.serviceType.size() <= 128;
+    }
+
+    function isValidCustomer(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.phone is string && data.phone.size() <= 64;
+    }
+
+    function isValidGovernmentAgency(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.clearanceAuthorityLevel is number;
+    }
+
+    function isValidGovernmentService(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.endpoint is string && data.endpoint.size() <= 1024;
+    }
+
+    function isValidAiAgent(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.modelAlias is string && data.modelAlias.size() <= 128;
+    }
+
+    function isValidAiConversation(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128;
+    }
+
+    function isValidAiMessage(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.convoId is string && data.convoId.size() <= 128
+        && data.role is string && (data.role == "user" || data.role == "model")
+        && data.text is string && data.text.size() <= 65536;
+    }
+
+    function isValidAiMemory(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.summary is string && data.summary.size() <= 65536;
+    }
+
+    function isValidAiEmbedding(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.chunkId is string && data.chunkId.size() <= 128
+        && data.vector is list && data.vector.size() <= 2048;
+    }
+
+    function isValidDocument(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.classification is string && data.classification.size() <= 64;
+    }
+
+    function isValidFile(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.documentId is string && data.documentId.size() <= 128
+        && data.fileName is string && data.fileName.size() <= 256
+        && data.url is string && data.url.size() <= 2048;
+    }
+
+    function isValidAnalytics(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.transitCargoVolume is number;
+    }
+
+    function isValidMetric(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.metricKey is string && data.metricKey.size() <= 256
+        && data.value is number;
+    }
+
+    function isValidSystemConfig(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.value is string && data.value.size() <= 2048;
+    }
+
+    function isValidFeatureFlag(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.isEnabled is bool;
+    }
+
+
+    // ==========================================
+    // SECTOR 1: CORE TENANCY & USERS
+    // ==========================================
+
+    match /organizations/{organizationId} {
+      allow get: if emailVerified() && (resource.data.status == "ACTIVE" || isAdmin()) && isValidId(organizationId);
+      allow list: if emailVerified();
+      allow create: if isAdmin() && isValidId(organizationId) && incoming().createdAt == request.time && isValidOrganization(incoming());
+      allow update: if isAdmin() && isValidId(organizationId) && incoming().createdAt == existing().createdAt && isValidOrganization(incoming());
+      allow delete: if isAdmin() && isValidId(organizationId);
+    }
+
     match /users/{userId} {
-      allow get: if isOwner(userId) && isValidId(userId);
-      
-      // Strict prohibition of general listing profiles
-      allow list: if false;
-      
-      allow create: if isOwner(userId) 
-        && isValidId(userId) 
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.keys().hasAll(['uid', 'email', 'createdAt'])
-        && request.resource.data.keys().size() <= 5
-        && isValidUser(request.resource.data);
-        
-      allow update: if isOwner(userId)
-        && isValidId(userId)
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.keys().size() <= 5
-        && isValidUser(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
-        
-      allow delete: if false;
-      
-      // Sub-collection: shipments
-      match /shipments/{shipmentId} {
-        allow get: if isOwner(userId) && isValidId(userId) && isValidId(shipmentId);
-        
-        // Secure Query List Enforcement
-        allow list: if isOwner(userId) && isValidId(userId);
-        
-        allow create: if isOwner(userId)
-          && isValidId(userId)
-          && isValidId(shipmentId)
-          && request.resource.data.updatedAt == request.time
-          && request.resource.data.keys().hasAll(['trackingNumber', 'status', 'userId', 'updatedAt'])
-          && request.resource.data.keys().size() <= 5
-          && isValidShipment(request.resource.data);
-          
-        allow update: if isOwner(userId)
-          && isValidId(userId)
-          && isValidId(shipmentId)
-          && request.resource.data.userId == resource.data.userId
-          && request.resource.data.trackingNumber == resource.data.trackingNumber
-          && request.resource.data.updatedAt == request.time
-          && request.resource.data.keys().size() <= 5
-          && isValidShipment(request.resource.data)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'estimatedDelivery', 'updatedAt']);
-          
-        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(shipmentId);
+      allow get: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidId(userId) && incoming().createdAt == request.time && isValidUser(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId) && incoming().createdAt == existing().createdAt && isValidUser(incoming()) && (isOwner(userId) ? incoming().diff(existing()).affectedKeys().hasOnly(['displayName']) : true);
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // ==========================================
+    // SECTOR 2: RBAC POLICIES
+    // ==========================================
+
+    match /roles/{roleId} {
+      allow get: if emailVerified() && isValidId(roleId);
+      allow list: if emailVerified();
+      allow create, update, delete: if isAdmin() && isValidId(roleId) && isValidRole(incoming());
+    }
+
+    match /permissions/{permissionId} {
+      allow read: if emailVerified() && isValidId(permissionId);
+      allow write: if isAdmin() && isValidId(permissionId) && isValidPermission(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 3: AUDITING & INTEGRATION NOTICES
+    // ==========================================
+
+    match /audit_logs/{logId} {
+      allow get: if emailVerified() && (existing().organizationId == getTenantId() || isAdmin()) && isValidId(logId);
+      allow list: if emailVerified() && (resource.data.organizationId == getTenantId() || isAdmin());
+      allow create: if emailVerified() && incoming().userId == request.auth.uid && incoming().timestamp == request.time && isValidAuditLog(incoming());
+      allow update, delete: if false; // Immutability Lock
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if (isOwner(existing().userId) || isAdmin()) && isValidId(notificationId);
+      allow list: if emailVerified() && resource.data.userId == request.auth.uid;
+      allow create: if (isAdmin() || emailVerified()) && incoming().createdAt == request.time && isValidNotification(incoming());
+      allow update: if isOwner(existing().userId) && isValidId(notificationId) && incoming().isRead is bool && incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if (isOwner(existing().userId) || isAdmin()) && isValidId(notificationId);
+    }
+
+    // ==========================================
+    // SECTOR 4: WORKFLOW QUEUES & TICKETS
+    // ==========================================
+
+    match /workflows/{workflowId} {
+      allow get: if emailVerified() && (existing().organizationId == getTenantId() || isAdmin()) && isValidId(workflowId);
+      allow list: if emailVerified() && (resource.data.organizationId == getTenantId() || isAdmin());
+      allow write: if isAdmin() && isValidId(workflowId) && isValidWorkflow(incoming());
+
+      match /tasks/{taskId} {
+        allow get: if emailVerified() && (get(/databases/$(database)/documents/workflows/$(workflowId)).data.organizationId == getTenantId() || isAdmin()) && isValidId(workflowId) && isValidId(taskId);
+        allow list: if emailVerified();
+        allow create, update: if emailVerified() && isValidId(workflowId) && isValidId(taskId) && isValidTask(incoming());
+        allow delete: if isAdmin() && isValidId(workflowId) && isValidId(taskId);
       }
+    }
+
+    match /tickets/{ticketId} {
+      allow get: if (isOwner(existing().userId) || existing().organizationId == getTenantId() || isAdmin()) && isValidId(ticketId);
+      allow list: if emailVerified() && (resource.data.userId == request.auth.uid || resource.data.organizationId == getTenantId() || isAdmin());
+      allow create: if emailVerified() && incoming().userId == request.auth.uid && incoming().createdAt == request.time && isValidTicket(incoming());
+      allow update: if emailVerified() && isValidId(ticketId) && (existing().userId == request.auth.uid || isAdmin()) && isValidTicket(incoming());
+      allow delete: if isAdmin() && isValidId(ticketId);
+    }
+
+    // ==========================================
+    // SECTOR 5: CARGO SHIPMENTS OPERATIONS
+    // ==========================================
+
+    match /shipments/{shipmentId} {
+      allow get: if emailVerified() && (existing().userId == request.auth.uid || existing().organizationId == getTenantId() || isAdmin()) && isValidId(shipmentId);
+      allow list: if emailVerified() && (resource.data.userId == request.auth.uid || resource.data.organizationId == getTenantId() || isAdmin());
+      allow create: if emailVerified() && isValidId(shipmentId) && isValidShipment(incoming());
+      allow update: if emailVerified() && isValidId(shipmentId) && (existing().userId == request.auth.uid || isAdmin()) && isValidShipment(incoming());
+      allow delete: if isAdmin() && isValidId(shipmentId);
+
+      match /tracking_events/{eventId} {
+        allow get: if emailVerified() && isValidId(shipmentId) && isValidId(eventId);
+        allow list: if emailVerified() && isValidId(shipmentId);
+        allow create: if emailVerified() && isValidId(shipmentId) && isValidId(eventId) && incoming().shipmentId == shipmentId && incoming().timestamp == request.time && isValidTrackingEvent(incoming());
+        allow update, delete: if isAdmin() && isValidId(shipmentId) && isValidId(eventId);
+      }
+    }
+
+    match /carriers/{carrierId} {
+      allow get: if emailVerified() && isValidId(carrierId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(carrierId) && isValidCarrier(incoming());
+    }
+
+    match /warehouses/{warehouseId} {
+      allow get: if emailVerified() && isValidId(warehouseId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(warehouseId) && isValidWarehouse(incoming());
+    }
+
+    match /routes/{routeId} {
+      allow get: if emailVerified() && isValidId(routeId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(routeId) && isValidRoute(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 6: CUSTOMS TRADE DECLARATION
+    // ==========================================
+
+    match /customs_declarations/{declarationId} {
+      allow get: if emailVerified() && (existing().organizationId == getTenantId() || isAdmin()) && isValidId(declarationId);
+      allow list: if emailVerified() && (resource.data.organizationId == getTenantId() || isAdmin());
+      allow create: if emailVerified() && isValidId(declarationId) && incoming().organizationId == getTenantId() && isValidCustomsDeclaration(incoming());
+      allow update: if emailVerified() && isValidId(declarationId) && (existing().organizationId == getTenantId() || isAdmin()) && isValidCustomsDeclaration(incoming());
+      allow delete: if isAdmin() && isValidId(declarationId);
+    }
+
+    match /customs_rates/{rateId} {
+      allow get: if emailVerified() && isValidId(rateId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(rateId) && isValidCustomsRate(incoming());
+    }
+
+    match /hs_codes/{codeId} {
+      allow get: if emailVerified() && isValidId(codeId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(codeId) && isValidHsCode(incoming());
+    }
+
+    match /customs_documents/{documentId} {
+      allow get: if emailVerified() && isValidId(documentId);
+      allow list: if emailVerified();
+      allow write: if emailVerified() && isValidId(documentId) && isValidCustomsDocument(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 7: ENTERPRISE RELATION PARTNERS
+    // ==========================================
+
+    match /companies/{companyId} {
+      allow get: if emailVerified() && isValidId(companyId);
+      allow list: if emailVerified();
+      allow write: if emailVerified() && isValidId(companyId) && isValidCompany(incoming());
+    }
+
+    match /partners/{partnerId} {
+      allow get: if emailVerified() && isValidId(partnerId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(partnerId) && isValidPartner(incoming());
+    }
+
+    match /vendors/{vendorId} {
+      allow get: if emailVerified() && isValidId(vendorId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(vendorId) && isValidVendor(incoming());
+    }
+
+    match /customers/{customerId} {
+      allow get: if emailVerified() && isValidId(customerId);
+      allow list: if emailVerified();
+      allow write: if emailVerified() && isValidId(customerId) && isValidCustomer(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 8: COGNITIVE SERVICES INTEGRATIONS
+    // ==========================================
+
+    match /government_agencies/{agencyId} {
+      allow get: if emailVerified() && isValidId(agencyId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(agencyId) && isValidGovernmentAgency(incoming());
+    }
+
+    match /government_services/{serviceId} {
+      allow get: if emailVerified() && isValidId(serviceId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(serviceId) && isValidGovernmentService(incoming());
+    }
+
+    match /ai_agents/{agentId} {
+      allow get: if emailVerified() && isValidId(agentId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(agentId) && isValidAiAgent(incoming());
+    }
+
+    match /ai_conversations/{conversationId} {
+      allow get: if (isOwner(existing().userId) || isAdmin()) && isValidId(conversationId);
+      allow list: if emailVerified() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if emailVerified() && incoming().userId == request.auth.uid && incoming().createdAt == request.time && isValidAiConversation(incoming());
+      allow update: if (isOwner(existing().userId) || isAdmin()) && isValidId(conversationId) && isValidAiConversation(incoming());
+      allow delete: if (isOwner(existing().userId) || isAdmin()) && isValidId(conversationId);
+
+      match /ai_messages/{messageId} {
+        allow get: if emailVerified() && isValidId(conversationId) && isValidId(messageId);
+        allow list: if emailVerified() && isValidId(conversationId);
+        allow create: if emailVerified() && isValidId(conversationId) && isValidId(messageId) && incoming().timestamp == request.time && isValidAiMessage(incoming());
+        allow update, delete: if isAdmin() && isValidId(conversationId) && isValidId(messageId);
+      }
+    }
+
+    match /ai_memory/{memoryId} {
+      allow get: if (isOwner(existing().userId) || isAdmin()) && isValidId(memoryId);
+      allow list: if emailVerified() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if emailVerified() && incoming().userId == request.auth.uid && incoming().updatedAt == request.time && isValidAiMemory(incoming());
+      allow update: if (isOwner(existing().userId) || isAdmin()) && isValidId(memoryId) && incoming().updatedAt == request.time && isValidAiMemory(incoming());
+      allow delete: if (isOwner(existing().userId) || isAdmin()) && isValidId(memoryId);
+    }
+
+    match /ai_embeddings/{embeddingId} {
+      allow get: if emailVerified() && isValidId(embeddingId);
+      allow list: if emailVerified();
+      allow write: if emailVerified() && isValidId(embeddingId) && isValidAiEmbedding(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 9: DOCUMENT SYSTEM & ARCHIVE
+    // ==========================================
+
+    match /documents/{documentId} {
+      allow get: if emailVerified() && isValidId(documentId) && (existing().classification == "PUBLIC" || existing().organizationId == getTenantId() || isAdmin());
+      allow list: if emailVerified() && (resource.data.classification == "PUBLIC" || resource.data.organizationId == getTenantId() || isAdmin());
+      allow write: if isAdmin() && isValidId(documentId) && isValidDocument(incoming());
+
+      match /files/{fileId} {
+        allow get: if emailVerified() && isValidId(documentId) && isValidId(fileId);
+        allow list: if emailVerified();
+        allow write: if isAdmin() && isValidId(documentId) && isValidId(fileId) && isValidFile(incoming());
+      }
+    }
+
+    // ==========================================
+    // SECTOR 10: ANALYTICS & CONFIGS
+    // ==========================================
+
+    match /analytics/{analyticsId} {
+      allow get: if emailVerified() && (existing().organizationId == getTenantId() || isAdmin()) && isValidId(analyticsId);
+      allow list: if emailVerified() && (resource.data.organizationId == getTenantId() || isAdmin());
+      allow write: if isAdmin() && isValidId(analyticsId) && isValidAnalytics(incoming());
+
+      match /metrics/{metricId} {
+        allow get: if emailVerified() && isValidId(analyticsId) && isValidId(metricId);
+        allow list: if emailVerified() && isValidId(analyticsId);
+        allow write: if isAdmin() && isValidId(analyticsId) && isValidId(metricId) && isValidMetric(incoming());
+      }
+    }
+
+    match /system_config/{configId} {
+      allow get: if emailVerified() && isValidId(configId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(configId) && isValidSystemConfig(incoming());
+    }
+
+    match /feature_flags/{flagId} {
+      allow get: if emailVerified() && isValidId(flagId);
+      allow list: if emailVerified();
+      allow write: if isAdmin() && isValidId(flagId) && isValidFeatureFlag(incoming());
     }
   }
 }

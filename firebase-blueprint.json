@@ -1,73 +1,567 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "A systems user account mapped from Firebase Auth.",
+    "Organization": {
+      "title": "Organization",
+      "description": "Multi-tenant organization account partition",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The unique user ID"
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address"
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name or nickname"
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "The user's profile photo URL"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the profile was created"
-        }
+        "id": { "type": "string", "description": "The unique organization ID" },
+        "name": { "type": "string", "description": "Enterprise name" },
+        "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED", "PENDING"], "description": "Subscription or approval status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
       },
-      "required": ["uid", "email", "createdAt"]
+      "required": ["id", "name", "status", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "System user account with organizational association",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Authentication UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "organizationId": { "type": "string", "description": "Associated Organization ID (for multi-tenancy)" },
+        "roleId": { "type": "string", "description": "Assigned role identifier" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["uid", "email", "organizationId", "roleId", "createdAt"]
+    },
+    "Role": {
+      "title": "Role",
+      "description": "Role-Based Access Control definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Role ID (e.g. admin, manager)" },
+        "name": { "type": "string", "description": "Human-readable name" },
+        "organizationId": { "type": "string", "description": "Organization context" },
+        "permissions": { "type": "array", "description": "List of permission strings associated with this role" }
+      },
+      "required": ["id", "name", "organizationId", "permissions"]
+    },
+    "Permission": {
+      "title": "Permission",
+      "description": "Granular permission description",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique permission key (e.g. read:shipments)" },
+        "description": { "type": "string", "description": "Detailed capability explanation" }
+      },
+      "required": ["id", "description"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable governance audit log entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Audit UUID" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Event timestamp" },
+        "userId": { "type": "string", "description": "Executing user UID" },
+        "organizationId": { "type": "string", "description": "Tenant organization" },
+        "action": { "type": "string", "description": "Descriptive action category" },
+        "details": { "type": "string", "description": "Operation details or diff log" }
+      },
+      "required": ["id", "timestamp", "userId", "organizationId", "action"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification alert",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Notification ID" },
+        "userId": { "type": "string", "description": "Target user identifier" },
+        "organizationId": { "type": "string", "description": "Tentative organization ID scope" },
+        "title": { "type": "string", "description": "Brief subject text" },
+        "body": { "type": "string", "description": "Detailed notice text" },
+        "isRead": { "type": "boolean", "description": "Read flag Status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Notice creation time" }
+      },
+      "required": ["id", "userId", "organizationId", "title", "body", "isRead", "createdAt"]
+    },
+    "Workflow": {
+      "title": "Workflow",
+      "description": "Stateful business processes workflow mapping",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Workflow identifier" },
+        "name": { "type": "string", "description": "Workflow sequence title" },
+        "organizationId": { "type": "string", "description": "Tenant organization" },
+        "active": { "type": "boolean", "description": "Usage active flag" },
+        "steps": { "type": "array", "description": "Sequence of task stages strings" }
+      },
+      "required": ["id", "name", "organizationId", "active", "steps"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Functional queue unit inside workflows",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique task ID" },
+        "workflowId": { "type": "string", "description": "Parent workflow association" },
+        "organizationId": { "type": "string", "description": "Organization id" },
+        "assignedTo": { "type": "string", "description": "Target asignee uid" },
+        "status": { "type": "string", "description": "Task state status" },
+        "title": { "type": "string", "description": "Task name" }
+      },
+      "required": ["id", "workflowId", "organizationId", "status", "title"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Government or customer support escalation log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Ticket ID" },
+        "organizationId": { "type": "string", "description": "Organization Id partition" },
+        "userId": { "type": "string", "description": "Requestor User UID" },
+        "title": { "type": "string", "description": "Escalation subject" },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "CLOSED"], "description": "Resolution status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "organizationId", "userId", "title", "status", "createdAt"]
     },
     "Shipment": {
       "title": "Shipment",
-      "description": "A tracked shipment status pinned to the user profile database.",
+      "description": "Logistics cargo item with transit mappings",
       "type": "object",
       "properties": {
-        "trackingNumber": {
-          "type": "string",
-          "description": "The unique shipment tracking number"
-        },
-        "status": {
-          "type": "string",
-          "description": "The current shipment transit status"
-        },
-        "estimatedDelivery": {
-          "type": "string",
-          "description": "The estimated delivery date string"
-        },
-        "userId": {
-          "type": "string",
-          "description": "The owner user ID linking to the parent user profile"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The last updated timestamp"
-        }
+        "id": { "type": "string", "description": "Shipment standard UUID" },
+        "organizationId": { "type": "string", "description": "Tenant owner context" },
+        "trackingNumber": { "type": "string", "description": "Cargo tracking number reference" },
+        "status": { "type": "string", "description": "Current position or status state" },
+        "estimatedDelivery": { "type": "string", "description": "Target arrival dates" },
+        "carrierId": { "type": "string", "description": "Assigned transporter agent key" },
+        "routeId": { "type": "string", "description": "Planned corridor path way ID" },
+        "userId": { "type": "string", "description": "Assigned manager user account" }
       },
-      "required": ["trackingNumber", "status", "userId", "updatedAt"]
+      "required": ["id", "organizationId", "trackingNumber", "status", "userId"]
+    },
+    "TrackingEvent": {
+      "title": "TrackingEvent",
+      "description": "Temporal point-of-presence update for a shipment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Timestamped event GUID" },
+        "shipmentId": { "type": "string", "description": "Associated shipment tracking scope" },
+        "location": { "type": "string", "description": "Vetted checkpoint name" },
+        "status": { "type": "string", "description": "Transition status string" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Verification time" }
+      },
+      "required": ["id", "shipmentId", "location", "status", "timestamp"]
+    },
+    "Carrier": {
+      "title": "Carrier",
+      "description": "Approved transporter or cargo service company",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Carrier ID" },
+        "name": { "type": "string", "description": "Carrier corporate name" },
+        "licenseNumber": { "type": "string", "description": "Sovereign transport mandate verification key" }
+      },
+      "required": ["id", "name", "licenseNumber"]
+    },
+    "Warehouse": {
+      "title": "Warehouse",
+      "description": "Licensed trade goods depot center",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Warehouse location identifier" },
+        "name": { "type": "string", "description": "Depot title name" },
+        "capacityLimit": { "type": "number", "description": "Authorized storage tons capability limit" },
+        "address": { "type": "string", "description": "Physical terminal locations" }
+      },
+      "required": ["id", "name", "capacityLimit"]
+    },
+    "Route": {
+      "title": "Route",
+      "description": "Customs transit shipping lane corridors",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Predefined transit corridor ID" },
+        "origin": { "type": "string", "description": "Loading cargo port origin" },
+        "destination": { "type": "string", "description": "Inland cargo clearing port" },
+        "distanceKm": { "type": "number", "description": "Sovereign path length kilometers" }
+      },
+      "required": ["id", "origin", "destination"]
+    },
+    "CustomsDeclaration": {
+      "title": "CustomsDeclaration",
+      "description": "Fristore legal customs entry filing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Filing identifier key" },
+        "organizationId": { "type": "string", "description": "Filing enterprise owner" },
+        "shipmentId": { "type": "string", "description": "Associated shipment ID cargo path" },
+        "hsCode": { "type": "string", "description": "Target harmonize scale trade HS Code digit groupings" },
+        "computedTariff": { "type": "number", "description": "Computed custom liability value" },
+        "status": { "type": "string", "description": "Approval workflow status check state (APPROVED, SUSPENDED)" }
+      },
+      "required": ["id", "organizationId", "shipmentId", "hsCode", "computedTariff", "status"]
+    },
+    "CustomsRate": {
+      "title": "CustomsRate",
+      "description": "Legislated customs tax rate metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Rate identifier key" },
+        "hsChapter": { "type": "string", "description": "Target HS Code Chapter grouping mapping" },
+        "adValoremPercent": { "type": "number", "description": "Sovereign ad-valorem tax percentage liability" }
+      },
+      "required": ["id", "hsChapter", "adValoremPercent"]
+    },
+    "HsCode": {
+      "title": "HsCode",
+      "description": "Harmonized technical merchandise category system digits representation",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "description": "Exact HS digit classification key" },
+        "description": { "type": "string", "description": "Official tariff system item description details" }
+      },
+      "required": ["code", "description"]
+    },
+    "CustomsDocument": {
+      "title": "CustomsDocument",
+      "description": "Vetted administrative border clearance document file reference",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Regulatory document UID" },
+        "shipmentId": { "type": "string", "description": "Linked shipment index" },
+        "documentType": { "type": "string", "description": "Declaration, invoice, or certificate description details" },
+        "fileURL": { "type": "string", "description": "Secure file storage URL mapping" }
+      },
+      "required": ["id", "shipmentId", "documentType", "fileURL"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "Registered local enterprise entity profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Standard registration ID" },
+        "name": { "type": "string", "description": "Company registration directory name" },
+        "taxNumber": { "type": "string", "description": "Tax authority validation string" }
+      },
+      "required": ["id", "name", "taxNumber"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Cross-border trading partner profile card",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Partner ID" },
+        "name": { "type": "string", "description": "Sovereign legal firm name" },
+        "country": { "type": "string", "description": "Sovereign geographical partner state country index" }
+      },
+      "required": ["id", "name", "country"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Enterprise logistics component vendor",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Vendor GUID" },
+        "name": { "type": "string", "description": "Firm name" },
+        "serviceType": { "type": "string", "description": "Category of logistics services" }
+      },
+      "required": ["id", "name", "serviceType"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Logistics end-customer profile mapping",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Client UID" },
+        "name": { "type": "string", "description": "Citizen standard full name" },
+        "phone": { "type": "string", "description": "Identity verification phone contact number" }
+      },
+      "required": ["id", "name", "phone"]
+    },
+    "GovernmentAgency": {
+      "title": "GovernmentAgency",
+      "description": "Associated government ministries directory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Agency unique acronym code index" },
+        "name": { "type": "string", "description": "Full formal title details" },
+        "clearanceAuthorityLevel": { "type": "number", "description": "Access validation bounds index mapping" }
+      },
+      "required": ["id", "name", "clearanceAuthorityLevel"]
+    },
+    "GovernmentService": {
+      "title": "GovernmentService",
+      "description": "Available electronic customs or logistics border integration service endpoints",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "API service ID" },
+        "name": { "type": "string", "description": "Service description endpoints name" },
+        "endpoint": { "type": "string", "description": "Technical gateway access URL mappings" }
+      },
+      "required": ["id", "name", "endpoint"]
+    },
+    "AiAgent": {
+      "title": "AiAgent",
+      "description": "System cognitive AI intelligence agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Agent configuration ID" },
+        "name": { "type": "string", "description": "System semantic agent tag name" },
+        "modelAlias": { "type": "string", "description": "Host model engine description (e.g. Gemini-3.5)" }
+      },
+      "required": ["id", "name", "modelAlias"]
+    },
+    "AiConversation": {
+      "title": "AiConversation",
+      "description": "Session container tracking conversational exchanges with AI agents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Conversation tracking ID" },
+        "userId": { "type": "string", "description": "Owner conversational user ID" },
+        "organizationId": { "type": "string", "description": "Tenant context" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "userId", "organizationId", "createdAt"]
+    },
+    "AiMessage": {
+      "title": "AiMessage",
+      "description": "An individual chat message in an AI conversation thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Message ID" },
+        "convoId": { "type": "string", "description": "Linked conversation thread ID" },
+        "role": { "type": "string", "enum": ["user", "model"], "description": "Message source role" },
+        "text": { "type": "string", "description": "Message textual payload content" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Time the message occurred" }
+      },
+      "required": ["id", "convoId", "role", "text", "timestamp"]
+    },
+    "AiMemory": {
+      "title": "AiMemory",
+      "description": "Sovereign AI memory context logs keying user metadata references",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Memory entity ID key" },
+        "userId": { "type": "string", "description": "Conversing user context" },
+        "summary": { "type": "string", "description": "Extracted key context summarization details" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update time" }
+      },
+      "required": ["id", "userId", "summary", "updatedAt"]
+    },
+    "AiEmbedding": {
+      "title": "AiEmbedding",
+      "description": "Vetted high-dimensional semantic vectors generated for document segments search",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Embedding reference ID" },
+        "chunkId": { "type": "string", "description": "Associated text chunk details reference" },
+        "vector": { "type": "array", "description": "Calculated vector coordinates array" }
+      },
+      "required": ["id", "chunkId", "vector"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "System document metadata file reference structure",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique global document index UUID" },
+        "organizationId": { "type": "string", "description": "Owning organization partition" },
+        "title": { "type": "string", "description": "Document filename or label title" },
+        "classification": { "type": "string", "enum": ["PUBLIC", "INTERNAL", "RESTRICTED", "CONFIDENTIAL", "SECRET"], "description": "Regulatory access clearance" }
+      },
+      "required": ["id", "organizationId", "title", "classification"]
+    },
+    "File": {
+      "title": "File",
+      "description": "Physical cloud storage path data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "File identifier code" },
+        "documentId": { "type": "string", "description": "Parent Document association" },
+        "fileName": { "type": "string", "description": "True filename string" },
+        "url": { "type": "string", "description": "Secure storage download endpoint link" }
+      },
+      "required": ["id", "documentId", "fileName", "url"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "System compiled operational data record snapshot",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Snapshot timestamp ID" },
+        "organizationId": { "type": "string", "description": "Organization data boundaries" },
+        "transitCargoVolume": { "type": "number", "description": "Total cargo volume metric inside organization context" }
+      },
+      "required": ["id", "organizationId", "transitCargoVolume"]
+    },
+    "Metric": {
+      "title": "Metric",
+      "description": "Aggregated transactional logistics metric measurement logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Metric measurement event ID" },
+        "metricKey": { "type": "string", "description": "Metric descriptor label (e.g. total_duties_usd_sum)" },
+        "value": { "type": "number", "description": "Current computational value state" }
+      },
+      "required": ["id", "metricKey", "value"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "Sovereign platform system configuration parameter variables",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Configuration variable index key" },
+        "value": { "type": "string", "description": "Active variable parameter value" },
+        "description": { "type": "string", "description": "Operational scope parameters info" }
+      },
+      "required": ["id", "value"]
+    },
+    "FeatureFlag": {
+      "title": "FeatureFlag",
+      "description": "Administrative functional feature toggle parameters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Flag technical identifier key" },
+        "isEnabled": { "type": "boolean", "description": "State active toggle value" }
+      },
+      "required": ["id", "isEnabled"]
     }
   },
   "firestore": {
+    "/organizations/{organizationId}": {
+      "schema": "Organization",
+      "description": "Top-level enterprise tenant configuration mappings"
+    },
     "/users/{userId}": {
       "schema": "User",
-      "description": "Individual user profile containing basic display or custom metadata."
+      "description": "Main user account configuration partitioned by user system credentials"
     },
-    "/users/{userId}/shipments/{shipmentId}": {
+    "/roles/{roleId}": {
+      "schema": "Role",
+      "description": "Authority settings mapped for RBAC validations"
+    },
+    "/permissions/{permissionId}": {
+      "schema": "Permission",
+      "description": "System capability key configurations database list"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Governance immutability logs tracking key administrative database events"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Citizen and operator communication notices directory"
+    },
+    "/workflows/{workflowId}": {
+      "schema": "Workflow",
+      "description": "Core logistics stateful process pipelines database configurations"
+    },
+    "/workflows/{workflowId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Step-by-step task tracking tickets belonging to active workflows"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "User or operator escalated service support tickets"
+    },
+    "/shipments/{shipmentId}": {
       "schema": "Shipment",
-      "description": "Sub-collection containing user-tracked and pinned shipment cards."
+      "description": "Cargo shipment manifest and tracking parameters ledger"
+    },
+    "/shipments/{shipmentId}/tracking_events/{eventId}": {
+      "schema": "TrackingEvent",
+      "description": "Chronological coordinate tracking events confirming physical point-of-presence"
+    },
+    "/carriers/{carrierId}": {
+      "schema": "Carrier",
+      "description": "Vetted transit carriers directory configuration mappings"
+    },
+    "/warehouses/{warehouseId}": {
+      "schema": "Warehouse",
+      "description": "Licensed border trade warehouse depots master catalog"
+    },
+    "/routes/{routeId}": {
+      "schema": "Route",
+      "description": "Defined customs transportation corridor paths"
+    },
+    "/customs_declarations/{declarationId}": {
+      "schema": "CustomsDeclaration",
+      "description": "Official customs entry and cargo declaration filings"
+    },
+    "/customs_rates/{rateId}": {
+      "schema": "CustomsRate",
+      "description": "National legislated customs tariff schedule list"
+    },
+    "/hs_codes/{codeId}": {
+      "schema": "HsCode",
+      "description": "International standard HS digit items definitions registry"
+    },
+    "/customs_documents/{documentId}": {
+      "schema": "CustomsDocument",
+      "description": "Associated customs clearance paper works and licenses mappings"
+    },
+    "/companies/{companyId}": {
+      "schema": "Company",
+      "description": "Directory catalog tracking registered local logistics businesses"
+    },
+    "/partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Catalog tracking associated cross-border trading partners"
+    },
+    "/vendors/{vendorId}": {
+      "schema": "Vendor",
+      "description": "Database registry housing enterprise logistics third-party vendors"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Profile index for retail logistics customers"
+    },
+    "/government_agencies/{agencyId}": {
+      "schema": "GovernmentAgency",
+      "description": "Registered ministries and administrative state organizations catalog"
+    },
+    "/government_services/{serviceId}": {
+      "schema": "GovernmentService",
+      "description": "Registered government electronic integration service endpoints"
+    },
+    "/ai_agents/{agentId}": {
+      "schema": "AiAgent",
+      "description": "Cognitive AI model and configuration parameter engines"
+    },
+    "/ai_conversations/{conversationId}": {
+      "schema": "AiConversation",
+      "description": "Chat session containers auditing AI agent conversations"
+    },
+    "/ai_conversations/{conversationId}/ai_messages/{messageId}": {
+      "schema": "AiMessage",
+      "description": "Step-by-step chronological messages exchanged within chat pipelines"
+    },
+    "/ai_memory/{memoryId}": {
+      "schema": "AiMemory",
+      "description": "Vetted conversational summary memory contexts keyed to active users"
+    },
+    "/ai_embeddings/{embeddingId}": {
+      "schema": "AiEmbedding",
+      "description": "High-dimensional vector database index for contextual AI intelligence searches"
+    },
+    "/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Official documents containing metadata and administrative classifications"
+    },
+    "/documents/{documentId}/files/{fileId}": {
+      "schema": "File",
+      "description": "Secure file storage URL locations mapping"
+    },
+    "/analytics/{analyticsId}": {
+      "schema": "Analytics",
+      "description": "System compiled analytic records snapshot for managerial operations"
+    },
+    "/analytics/{analyticsId}/metrics/{metricId}": {
+      "schema": "Metric",
+      "description": "Fristore metric parameters tracking cargo throughputs"
+    },
+    "/system_config/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Central system parameters governing platform behavior"
+    },
+    "/feature_flags/{flagId}": {
+      "schema": "FeatureFlag",
+      "description": "Administrative functional feature toggle parameters"
     }
   }
 }
