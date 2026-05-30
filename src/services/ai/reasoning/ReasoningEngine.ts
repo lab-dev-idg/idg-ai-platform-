@@ -11,8 +11,16 @@ import {
   ReasoningContext,
   VerifiedEvidence,
   ReasoningConflict,
-  ReasoningEvaluation
+  ReasoningEvaluation,
+  EvidenceBundle,
+  ConflictReport,
+  ReasoningResult,
+  Citation,
+  EvidenceRecord,
+  CitationFormat
 } from './types';
+import { CitationEngine } from './CitationEngine';
+import { ConfidenceScorer } from './ConfidenceScorer';
 
 export class ReasoningEngine {
   private static instance: ReasoningEngine;
@@ -160,6 +168,80 @@ export class ReasoningEngine {
       conflictsDetected: conflicts,
       missingEvidenceCount: missingEvidence.missingCount,
       missingEvidenceDetails: missingEvidence.missingDetails
+    };
+  }
+
+  /**
+   * Enterprise-grade reasoning analysis over structured Evidence Bundles.
+   */
+  public analyzeEvidence(
+    bundle: EvidenceBundle,
+    context: ReasoningContext,
+    conflictReport: ConflictReport
+  ): ReasoningResult {
+    const findings: string[] = [];
+    const warnings: string[] = [];
+    const citations: Citation[] = [];
+
+    const citationEngine = CitationEngine.getInstance();
+    const confidenceScorer = ConfidenceScorer.getInstance();
+
+    const evidenceUsed: EvidenceRecord[] = bundle.records;
+
+    // Compile dynamic citations
+    evidenceUsed.forEach((evidence) => {
+      citations.push(citationEngine.generateCitation(evidence, CitationFormat.SHORT));
+    });
+
+    // Detect outdated policy layers
+    const currentYear = new Date().getFullYear();
+    evidenceUsed.forEach((ev) => {
+      if (ev.metadata?.publicationDate) {
+        const pubYear = new Date(ev.metadata.publicationDate).getFullYear();
+        if (currentYear - pubYear > 2) {
+          warnings.push(`Evidence source "${ev.citation}" was published in ${pubYear} and may be superseded by newer legal amendments.`);
+        }
+      }
+    });
+
+    // Detect missing context indicators
+    const queryLower = context.query.toLowerCase();
+    if (queryLower.includes('tariff') && !evidenceUsed.some(ev => ev.text.toLowerCase().includes('tariff') || ev.text.toLowerCase().includes('ad-valorem'))) {
+      warnings.push(`Advisory query requests tariff classifications, but no ad-valorem customs tariff rate matrices were retrieved in the evidence bundle.`);
+    }
+    if (queryLower.includes('compliance') && !evidenceUsed.some(ev => ev.text.toLowerCase().includes('compliance') || ev.text.toLowerCase().includes('aml') || ev.text.toLowerCase().includes('cbi'))) {
+      warnings.push(`Advisory queries currency compliance, but no Central Bank regulatory circulars were retrieved in the evidence bundle.`);
+    }
+
+    // Synthesize key findings
+    evidenceUsed.forEach((ev, idx) => {
+      const issuer = ev.metadata?.issuingAuthority || 'Iraqi Commission';
+      findings.push(`[FINDING #${idx + 1}] Source "${ev.citation}" published by ${issuer} declares: "${ev.text.substring(0, 120)}..."`);
+    });
+
+    if (conflictReport.resolvedConflicts.length > 0) {
+      findings.push(`System successfully resolved ${conflictReport.resolvedConflicts.length} statutory rule collision(s) internally.`);
+    }
+
+    const scorerResult = confidenceScorer.calculateConfidence(bundle, conflictReport);
+
+    let summary = `This legal/customs advisory is formulated based on ${evidenceUsed.length} authoritative national sources. `;
+    if (scorerResult.score >= 0.8) {
+      summary += `The reasoning maintains a Very High/High confidence level (${scorerResult.score}) with robust consistency across matching ministerial decrees.`;
+    } else if (scorerResult.score >= 0.6) {
+      summary += `The reasoning maintains a Moderate confidence level (${scorerResult.score}) due to minor gaps in the retrieved legal codes.`;
+    } else {
+      summary += `The reasoning maintains a Low confidence level (${scorerResult.score}). Access boundaries or missing files restrict definitive validation.`;
+    }
+
+    return {
+      summary,
+      findings,
+      confidenceScore: scorerResult.score,
+      citations,
+      evidenceUsed,
+      warnings,
+      unresolvedConflicts: conflictReport.unresolvedConflicts
     };
   }
 }

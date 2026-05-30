@@ -19,6 +19,14 @@ import { AIActionContract, ActionFramework } from '../action/ActionFramework';
 import { AIKernel } from '../kernel/AIKernel';
 import { KernelGovernor } from '../kernel/KernelGovernor';
 
+// Phase 13-E Advanced Reasoning Integration
+import { EvidenceCollector } from '../reasoning/EvidenceCollector';
+import { ConflictResolver } from '../reasoning/ConflictResolver';
+import { ReasoningEngine } from '../reasoning/ReasoningEngine';
+import { AnswerSynthesizer } from '../reasoning/AnswerSynthesizer';
+import { ReasoningAuditTrail } from '../reasoning/ReasoningAuditTrail';
+import { ReasoningContext } from '../reasoning/types';
+
 export interface OrchestratorDecision {
   status: 'SUCCESS' | 'BLOCKED' | 'SAFETY_REJECTED' | 'FAILED';
   intent: IntentCategory;
@@ -390,7 +398,64 @@ export class AIOrchestrator {
         baseResponseText = `Operation '${selectedToolName}' completed successfully in safe sequence mode.`;
       }
     } else if (didRAG_run && ragResult && ragResult.rankedResults.length > 0) {
-      baseResponseText = `Retrieved matching regulatory materials from authorized national domains:\n\n${ragResult.rankedResults[0].content}`;
+      try {
+        console.log(`[ORCHESTRATOR] Routing matching entities into the Phase 13-E Advanced Reasoning Core.`);
+        const userRoleDef = USER_TYPE_REGISTRY[userType];
+        const clearanceLevel = userRoleDef ? userRoleDef.clearanceLevel : 0;
+
+        // 1. Evidence Collection
+        const evidenceCollector = EvidenceCollector.getInstance();
+        const bundle = await evidenceCollector.collectEvidence(userInput, {
+          userId: 'ORCH-SESSION-USER',
+          userType,
+          clearanceLevel
+        });
+
+        // 2. Conflict Resolution
+        const conflictResolver = ConflictResolver.getInstance();
+        const conflictReport = conflictResolver.analyzeConflicts(bundle.records);
+
+        // 3. Reasoning Evaluation
+        const reasoningCtx: ReasoningContext = {
+          query: userInput,
+          userType,
+          clearanceLevel,
+          userId: 'ORCH-SESSION-USER'
+        };
+        const reasoningEngine = ReasoningEngine.getInstance();
+        const reasoningResult = reasoningEngine.analyzeEvidence(bundle, reasoningCtx, conflictReport);
+
+        // 4. Answer Synthesis
+        const answerSynthesizer = AnswerSynthesizer.getInstance();
+        const finalAnswer = answerSynthesizer.synthesizeAnswer(reasoningResult);
+
+        // 5. Commit to Immutable Reasoning Audit Trail Log
+        const auditTrail = ReasoningAuditTrail.getInstance();
+        await auditTrail.logReasoningTransaction({
+          userId: 'ORCH-SESSION-USER',
+          userType,
+          clearanceLevel,
+          query: userInput,
+          evidenceAccessed: bundle.records.map(r => ({
+            documentId: r.documentId,
+            chunkId: r.chunkId,
+            classification: r.classification
+          })),
+          evidenceRejected: conflictReport.conflicts.map(c => ({
+            documentId: c.contradictingDocId,
+            classification: 'RESTRICTED',
+            reason: c.description
+          })),
+          conflictsDetected: conflictReport.conflicts,
+          confidenceScore: reasoningResult.confidenceScore,
+          citations: reasoningResult.citations.map(c => c.readableReference)
+        });
+
+        baseResponseText = finalAnswer.answer;
+      } catch (err) {
+        console.warn(`[ORCHESTRATOR] Advanced reasoning failed, reverting to baseline text.`, err);
+        baseResponseText = `Retrieved matching regulatory materials from authorized national domains:\n\n${ragResult.rankedResults[0].content}`;
+      }
     } else {
       baseResponseText = `Iraqi Digital Gateway central AI engine online. Standard clearance successfully completed for User role: '${userType}'. Operational health registers report normal values. How can I assist you with border checkpoints, cargo customs, or tariff computations?`;
     }

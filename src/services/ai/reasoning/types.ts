@@ -201,3 +201,94 @@ export interface HumanReviewTask {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Phase 13-E Advanced Citation & Reasoning Interfaces
+ */
+
+export enum CitationFormat {
+  SHORT = 'SHORT',
+  STANDARD = 'STANDARD',
+  LEGAL = 'LEGAL',
+  TECHNICAL = 'TECHNICAL',
+  GOVERNMENT = 'GOVERNMENT'
+}
+
+export interface Citation {
+  id: string;
+  text: string;
+  documentId: string;
+  chunkId?: string;
+  format: CitationFormat;
+  readableReference: string;
+  lineage: string[];
+}
+
+export interface EvidenceSourceChain {
+  originType: 'KNOWLEDGE_REGISTRY' | 'SEMANTIC_VECTOR' | 'IN_MEMORY_STORE' | 'VERTEX_AI' | 'VECTOR_DB';
+  documentId: string;
+  chunkId?: string;
+  classification: KnowledgeClassification;
+  authority: string;
+  rawSource: string;
+  trustScore: number;
+}
+
+export interface EvidenceRecord {
+  id: string;
+  chunkId: string;
+  documentId: string;
+  text: string;
+  citation: string;
+  classification: KnowledgeClassification;
+  domain: KnowledgeDomain;
+  trustScore: number;
+  relevance: number;
+  sourceChain: EvidenceSourceChain;
+  metadata?: Record<string, any>;
+}
+
+export interface EvidenceBundle {
+  id: string;
+  query: string;
+  records: EvidenceRecord[];
+  aggregatedAt: string;
+  totalCount: number;
+  maxClassification: KnowledgeClassification;
+  averageTrustScore: number;
+}
+
+export interface ReasoningResult {
+  summary: string;
+  findings: string[];
+  confidenceScore: number;
+  citations: Citation[];
+  evidenceUsed: EvidenceRecord[];
+  warnings: string[];
+  unresolvedConflicts: ReasoningConflict[];
+}
+
+export interface TrustedAnswer {
+  answer: string;
+  confidenceScore: number;
+  confidenceLabel: string;
+  citations: Citation[];
+  warnings: string[];
+  evidenceCount: number;
+  generatedAt: string;
+}
+
+export interface ConflictReport {
+  id: string;
+  conflicts: ReasoningConflict[];
+  resolvedConflicts: Array<{
+    conflictId: string;
+    resolvedBy: string; // Strategy name
+    winningDocId: string;
+    losingDocId: string;
+    explanation: string;
+  }>;
+  unresolvedConflicts: ReasoningConflict[];
+  auditTimestamp: string;
+}
+
