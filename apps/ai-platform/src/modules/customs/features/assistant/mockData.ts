@@ -1,34 +1,50 @@
-import { ImporterProductInput, CustomsScenario } from './types';
-
-export const LAPTOP_SCENARIO_INPUT: ImporterProductInput = {
-  productName: 'ThinBook Pro High-Perf Laptop Computers',
-  productDescription: 'Portable computers containing Intel Core i7 CPUs, 16GB LPDDR5 RAM, 512GB NVMe SSD with integrated lithium-ion batteries. Approved for educational and corporate deployments in Erbil Governorate.',
-  quantity: 500,
-  originCountry: 'China',
-  invoiceValue: 250000,
-  destinationCity: 'Erbil',
-  transportMethod: 'Sea Freight'
-};
+import { ImporterProductInput, CustomsScenario, RouteTimelineNode } from './types';
 
 export const MOCK_SCENARIOS: Record<string, ImporterProductInput> = {
-  laptops: LAPTOP_SCENARIO_INPUT,
-  pharmaceuticals: {
-    productName: 'Essential Vaccines & Medical Packs',
-    productDescription: 'Temperature-controlled cardiovascular medicines and vaccinations. High priority sovereign import. To be delivered to Erbil North Medical Depot.',
-    quantity: 1200,
-    originCountry: 'Germany',
-    invoiceValue: 430000,
+  laptops: {
+    productName: 'ThinBook Pro High-Perf Laptop Computers',
+    productDescription: 'Portable computers containing Intel Core i7 CPUs, 16GB LPDDR5 RAM, 512GB NVMe SSD with integrated lithium-ion batteries. Approved for educational and corporate deployments in Erbil Governorate.',
+    quantity: 500,
+    originCountry: 'China',
+    invoiceValue: 250000,
     destinationCity: 'Erbil',
+    transportMethod: 'Sea Freight'
+  },
+  medical: {
+    productName: 'Advanced MRI & Cardiac ICU Scanners',
+    productDescription: 'High-precision magnetic resonance imaging scanners, healthcare telemetry accessories, and medical workstation consoles for Iraqi federal clinics in Baghdad.',
+    quantity: 12,
+    originCountry: 'Germany',
+    invoiceValue: 780000,
+    destinationCity: 'Baghdad',
     transportMethod: 'Air Freight'
   },
   construction: {
     productName: 'Heavy Structural Steel Rebar Bundles',
-    productDescription: 'Grade 60 carbon steel reinforcing bars for regional infrastructure construction projects in Northern Iraq.',
+    productDescription: 'Grade 60 carbon steel reinforcing bars for regional infrastructure construction projects in Northern Iraq, certified for maximum seismic load capacity.',
     quantity: 180,
     originCountry: 'Turkey',
     invoiceValue: 145000,
     destinationCity: 'Erbil',
     transportMethod: 'Land Freight'
+  },
+  agricultural: {
+    productName: 'Temperature-Controlled Grains & Agri Seeds',
+    productDescription: 'Pre-treated hybrid cereal seeds and high-yield grain cultivars designed for semi-arid zones. National grain replenishment program for Nineveh Governorate.',
+    quantity: 450,
+    originCountry: 'Jordan',
+    invoiceValue: 95000,
+    destinationCity: 'Mosul',
+    transportMethod: 'Land Freight'
+  },
+  telecom: {
+    productName: '5G Fiber-Optic Cellular Transceivers',
+    productDescription: 'MIMO multi-band telecommunications transmitters, active antenna processors, and gigabit optical fiber cables for cellular node expansions across Baghdad City.',
+    quantity: 85,
+    originCountry: 'South Korea',
+    invoiceValue: 620000,
+    destinationCity: 'Baghdad',
+    transportMethod: 'Air Freight'
   }
 };
 
@@ -55,16 +71,16 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
   let regulatoryNotes = 'Requires CMC (Communications and Media Commission) Type-Approval Certification under Iraqi telecom safety standards. Eligible for Green-Lane expedited customs clearance upon digital submission of battery security sheets.';
   let typeApprovalRequired = true;
   let greenLaneEligible = true;
-  let riskScore = 18;
+  let riskScore = 15;
 
-  if (normName.includes('vaccine') || normName.includes('medic') || normName.includes('pharm') || normDesc.includes('medical')) {
-    hsSuggestedCode = '3004.90';
+  if (normName.includes('vaccine') || normName.includes('medic') || normName.includes('pharm') || normDesc.includes('medical') || normName.includes('mri')) {
+    hsSuggestedCode = '9018.13'; // medical scanners
     confidenceScore = 98;
     alternativeCodes = [
-      { code: '3004.50', confidence: 88, label: 'Medicaments containing vitamins/other products' },
-      { code: '3002.15', confidence: 81, label: 'Immunological products, mixed or put up in measured doses' }
+      { code: '9018.19', confidence: 89, label: 'Other electro-diagnostic apparatus (including apparatus for functional exploratory examination)' },
+      { code: '9018.90', confidence: 82, label: 'Instruments and appliances used in medical or veterinary sciences' }
     ];
-    productCategory = 'Medicaments & Pharmaceutical Prep';
+    productCategory = 'Electro-Diagnostic Medical Instruments (MRI)';
     customsClassification = 'Category I Vital Humanitarian Goods';
     dutyPercent = 2; // Encouraged humanitarian tariff
     taxPercent = 5; // Reduced health sector VAT
@@ -88,79 +104,104 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
     regulatoryNotes = 'Subject to Central Organization for Standardization and Quality Control (COSQC) hardness testing. Grade certification must be physically cross-referenced with Iraqi build codes.';
     typeApprovalRequired = false;
     greenLaneEligible = false;
-    riskScore = 32;
-  } else if (normName.includes('phone') || normName.includes('mobile') || normName.includes('telecom') || normDesc.includes('radio')) {
-    hsSuggestedCode = '8517.13';
+    riskScore = 28;
+  } else if (normName.includes('grain') || normName.includes('agri') || normName.includes('seed') || normName.includes('cereal')) {
+    hsSuggestedCode = '1001.99'; // wheat / grain seeds
     confidenceScore = 95;
     alternativeCodes = [
-      { code: '8517.18', confidence: 90, label: 'Other telephone sets and devices for transmitting voices' },
-      { code: '8517.62', confidence: 83, label: 'Machines for reception, conversion & transmission of voices/data' }
+      { code: '1001.11', confidence: 92, label: 'Durum wheat seed for sowing purposes' },
+      { code: '1209.91', confidence: 80, label: 'Vegetable seeds for sowing transactions' }
     ];
-    productCategory = 'Smartphones & Terminal Communication Devices';
+    productCategory = 'Cereal Grains & Sowing Grass Seeds';
+    customsClassification = 'Category II Critical Agricultural Inputs';
+    dutyPercent = 3;
+    taxPercent = 5; // Reduced rate for food and agricultural sovereignty
+    processingFee = 180;
+    regulatoryNotes = 'Requires Ministry of Agriculture grain test certification, phytosanitary release document, and chemical treatment report at port of entry. Fast-tracked for domestic distribution.';
+    typeApprovalRequired = true;
+    greenLaneEligible = true;
+    riskScore = 12;
+  } else if (normName.includes('phone') || normName.includes('mobile') || normName.includes('telecom') || normDesc.includes('radio') || normName.includes('5g') || normName.includes('fiber')) {
+    hsSuggestedCode = '8517.62';
+    confidenceScore = 97;
+    alternativeCodes = [
+      { code: '8517.13', confidence: 91, label: 'Smartphones for cellular network terminals' },
+      { code: '8517.79', confidence: 85, label: 'Other parts of transmitting and reception apparatus' }
+    ];
+    productCategory = 'MIMO Transceivers & Fiber Multiplexing';
     customsClassification = 'Category IV High-Tech Equipment';
-    dutyPercent = 10;
+    dutyPercent = 8;
     taxPercent = 10;
-    processingFee = 250;
+    processingFee = 300;
     regulatoryNotes = 'Requires IMEI registration, cellular radio spectrum authorization from the National Communications Commission, and security module screening against the Ministry of Interior blacklist.';
     typeApprovalRequired = true;
     greenLaneEligible = true;
     riskScore = 22;
   }
 
-  // Multiply by input quantity / value if user changes them
+  // Calculate taxes on value
   const val = input.invoiceValue > 0 ? input.invoiceValue : 250000;
   const dutyAmt = Math.round(val * (dutyPercent / 100));
   const taxAmt = Math.round(val * (taxPercent / 100));
   const totalCost = dutyAmt + taxAmt + processingFee;
 
-  // Set risk category based on score
   let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
-  if (riskScore > 40) riskLevel = 'HIGH';
-  else if (riskScore > 25) riskLevel = 'MEDIUM';
+  if (riskScore > 35) riskLevel = 'HIGH';
+  else if (riskScore > 20) riskLevel = 'MEDIUM';
 
   const riskNotes = [
-    `Exporter verified under CBI Safe-Trading Whitelist (CBI-ST-${3000 + Math.round(Math.random() * 6000)})`,
+    `Exporter verified under CBI Safe-Trading Whitelist (CBI-ST-${4000 + Math.round(Math.random() * 5000)})`,
     greenLaneEligible 
-      ? 'Umm Qasr South Port designated as a green-lane node for verified software'
-      : 'COSQC physical sampling required at land entry point',
-    `Customs assessment node configured for active-active backup routing to primary Baghdad cloud centers`
+      ? 'Umm Qasr South Port / Airport cargo terminal designated as a green-lane node'
+      : 'COSQC physical sampling required at land entry boundary',
+    `Secure backup server synced with central Baghdad Cloud centers for real-time tracking`
   ];
 
-  // Logistics routing
+  // Logistics routing setup
   let origin = 'Shanghai Port, China';
   let transitPort = 'Umm Qasr South Terminal, Basra';
   let routeConfidence = 93;
   let shippingLine = 'Maersk Line Integrated Logistics';
-  let etaDays = 21;
+  let etaDays = 24;
 
-  if (input.originCountry.toLowerCase() === 'germany' || input.originCountry.toLowerCase().includes('germ')) {
+  if (input.originCountry.toLowerCase().includes('germany') || input.originCountry.toLowerCase().includes('ger')) {
     origin = 'Munich Airport (MUC), Germany';
     transitPort = 'Baghdad International Cargo Terminal (BGW)';
-    shippingLine = 'Lufthansa Cargo AG / Middle East Exp';
+    shippingLine = 'Lufthansa Cargo AG / Middle East Express';
     routeConfidence = 97;
     etaDays = 4;
-  } else if (input.originCountry.toLowerCase() === 'turkey' || input.originCountry.toLowerCase().includes('turk')) {
+  } else if (input.originCountry.toLowerCase().includes('turkey') || input.originCountry.toLowerCase().includes('tur')) {
     origin = 'Iskenderun Port, Turkey';
     transitPort = 'Ibrahim Khalil Border Crossing, Zakho';
     shippingLine = 'Aras Logistics Ground Fleet';
-    routeConfidence = 91;
+    routeConfidence = 92;
     etaDays = 6;
+  } else if (input.originCountry.toLowerCase().includes('jordan') || input.originCountry.toLowerCase().includes('jor')) {
+    origin = 'Aqaba Sea Port, Jordan';
+    transitPort = 'Trebil Border Crossing, Anbar';
+    shippingLine = 'Hashemite Overland Transport Corp';
+    routeConfidence = 90;
+    etaDays = 5;
+  } else if (input.originCountry.toLowerCase().includes('korea') || input.originCountry.toLowerCase().includes('kor')) {
+    origin = 'Incheon International Airport (ICN), South Korea';
+    transitPort = 'Baghdad International Cargo Terminal (BGW)';
+    shippingLine = 'Asiana Cargo Flight Express';
+    routeConfidence = 95;
+    etaDays = 5;
   }
 
-  // Adjust routing for other input methods
+  // Adjust for air transport
   if (input.transportMethod === 'Air Freight') {
     if (etaDays > 7) {
       etaDays = 5;
     }
     shippingLine = 'Iraqi Airways Cargo / DHL Express';
-    transitPort = 'Erbil International Airport Cargo Terminal (EBL)';
-    routeConfidence = 95;
+    transitPort = 'Baghdad International Cargo Terminal (BGW)';
   } else if (input.transportMethod === 'Land Freight') {
     if (etaDays > 10) {
-      etaDays = 8;
+      etaDays = 7;
     }
     shippingLine = 'Middle East Overland Freight Carrier';
-    transitPort = 'Ibrahim Khalil Border Crossing, Zakho';
   }
 
   const timelineNodes: RouteTimelineNode[] = [
@@ -170,15 +211,15 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
       location: origin,
       daysOffset: 0,
       status: 'COMPLETED',
-      description: `Cargo container loaded and sealed. Digital Manifest (Hashed: sha256_e8d3...) dispatched to Iraq Gateway.`
+      description: `Cargo container loaded and sealed. Digital Manifest dispatched to Iraq Digital Gateway system.`
     },
     {
       id: 'step_2',
-      stageName: input.transportMethod === 'Air Freight' ? 'In-Flight Transit' : 'Ocean Leg Cargo Freight',
-      location: input.transportMethod === 'Air Freight' ? 'International Air Corridor' : 'South China Sea / Arabian Sea',
-      daysOffset: Math.round(etaDays * 0.3),
+      stageName: input.transportMethod === 'Air Freight' ? 'In-Flight Transit' : 'In-Transit Freight',
+      location: input.transportMethod === 'Air Freight' ? 'International Air Corridor' : 'International Sea and Land Corridors',
+      daysOffset: Math.round(etaDays * 0.35),
       status: 'COMPLETED',
-      description: 'Shipment dispatched from origin airport/sea node. Tracking telemetry stream active.'
+      description: 'Shipment departed. Live location tracking telemetry via GPS active and secure.'
     },
     {
       id: 'step_3',
@@ -194,15 +235,15 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
       location: transitPort,
       daysOffset: Math.round(etaDays * 0.8),
       status: 'PENDING',
-      description: `Automated assessment of ${dutyPercent}% Tariff + ${taxPercent}% Sales Tax. Escrow payment release.`
+      description: `Automated assessment of ${dutyPercent}% Tariff + ${taxPercent}% Sales Tax. Escrow payment link ready.`
     },
     {
       id: 'step_5',
       stageName: 'Sovereign Transit Route',
-      location: 'Federal Highway Express Link',
-      daysOffset: Math.round(etaDays * 0.95),
+      location: 'Federal Highway Link',
+      daysOffset: Math.round(etaDays * 0.9),
       status: 'PENDING',
-      description: `Secure internal convoy transit under Federal electronic lock seals toward the Kurdistan Region.`
+      description: `Secure internal convoy transit under Federal electronic lock seals toward the regional terminal.`
     },
     {
       id: 'step_6',
@@ -216,8 +257,8 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
 
   return {
     id: `SCN-${Date.now().toString().substring(7)}`,
-    title: `Sovereign Cargo Declaration for ${input.quantity}x ${input.productName.split(' ')[0]}`,
-    description: `Cargo flow of electronics from ${input.originCountry} to ${input.destinationCity} via ${input.transportMethod}.`,
+    title: `Sovereign Cargo Declaration for ${input.quantity} Units`,
+    description: `Cargo flow from ${input.originCountry} to ${input.destinationCity} via ${input.transportMethod}.`,
     input,
     analysis: {
       hsSuggestedCode,
@@ -250,11 +291,11 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
       securityNotes: riskNotes
     },
     documents: [
-      { id: 'doc_1', name: 'Commercial Invoice', description: 'Certified commercial pricing sheet showing CIF transactional breakdown.', status: 'APPROVED', isRequired: true, updatedAt: 'Overlooked on 28-May' },
+      { id: 'doc_1', name: 'Commercial Invoice', description: 'Certified commercial pricing sheet showing CIF transactional breakdown.', status: 'APPROVED', isRequired: true, updatedAt: 'Approved on Oct 28' },
       { id: 'doc_2', name: 'Packing List', description: 'Itemized bundle contents showing net weight, dimensions, and battery certificates.', status: 'APPROVED', isRequired: true },
-      { id: 'doc_3', name: 'Bill of Lading', description: 'Frictionless electronic consignment note issued by shipper Maersk Corp.', status: 'APPROVED', isRequired: true },
-      { id: 'doc_4', name: 'Certificate of Origin', description: 'Original trade certificate authenticated by China Council for the Promotion of International Trade (CCPIT).', status: 'APPROVED', isRequired: true },
-      { id: 'doc_5', name: 'Import License', description: 'Kurdistan Regional Government (KRG) and KRG Ministry of Trade issued import certificate.', status: 'APPROVED', isRequired: true }
+      { id: 'doc_3', name: 'Bill of Lading', description: 'Frictionless electronic consignment note issued by shipper.', status: 'APPROVED', isRequired: true },
+      { id: 'doc_4', name: 'Certificate of Origin', description: 'Original trade certificate authenticated by foreign Export Council.', status: 'APPROVED', isRequired: true },
+      { id: 'doc_5', name: 'Import License', description: 'Federal Ministry of Trade issued certificate for import clearance.', status: 'PENDING', isRequired: true }
     ],
     logistics: {
       origin,
@@ -263,7 +304,7 @@ export function calculateScenario(input: ImporterProductInput): CustomsScenario 
       etaDays,
       routeConfidence,
       shippingLine,
-      containerType: '40ft High-Cube Reefer Consolidated',
+      containerType: '40ft High-Cube consolidated container',
       timeline: timelineNodes
     }
   };
