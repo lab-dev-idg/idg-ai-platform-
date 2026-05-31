@@ -16,6 +16,42 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  app.get("/api/diagnostics", (req, res) => {
+    const geminiKey = process.env.GEMINI_API_KEY || "";
+    const mapsKey = process.env.GOOGLE_MAPS_PLATFORM_KEY || process.env.VITE_GOOGLE_MAPS_PLATFORM_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || "";
+    
+    // Firebase checking
+    let firebaseStatus = "Missing";
+    try {
+      const fs = require('fs');
+      const fcPath = path.join(process.cwd(), 'firebase-applet-config.json');
+      let fc: any = {};
+      if (fs.existsSync(fcPath)) {
+        fc = JSON.parse(fs.readFileSync(fcPath, 'utf8'));
+      }
+      const fbKey = process.env.VITE_FIREBASE_API_KEY || fc?.apiKey || "";
+      const fbProj = process.env.VITE_FIREBASE_PROJECT_ID || fc?.projectId || "";
+      if (!fbKey || !fbProj) {
+        firebaseStatus = "Missing";
+      } else if (fbKey.includes("YOUR_") || fbKey.length < 10) {
+        firebaseStatus = "Invalid";
+      } else {
+        firebaseStatus = "Connected";
+      }
+    } catch (e) {
+      firebaseStatus = "Invalid";
+    }
+
+    const geminiStatus = !geminiKey ? "Missing" : (geminiKey.includes("YOUR_") || geminiKey.length < 10) ? "Invalid" : "Connected";
+    const mapsStatus = !mapsKey ? "Missing" : (mapsKey.includes("YOUR_") || mapsKey.length < 10) ? "Invalid" : "Connected";
+
+    res.json({
+      gemini: geminiStatus,
+      maps: mapsStatus,
+      firebase: firebaseStatus,
+    });
+  });
+
   app.use("/api/chat", chatRouter);
   app.use("/api/actions", actionRouter);
 

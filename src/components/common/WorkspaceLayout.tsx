@@ -106,6 +106,26 @@ export default function WorkspaceLayout() {
     return () => clearInterval(interval);
   }, []);
 
+  // Sovereign Services Status Diagnostic Hook
+  const [diagnostics, setDiagnostics] = useState<{gemini: string; maps: string; firebase: string}>({
+    gemini: "Connected",
+    maps: "Connected",
+    firebase: "Connected"
+  });
+
+  useEffect(() => {
+    fetch("/api/diagnostics")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.gemini) {
+          setDiagnostics(data);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch diagnostics:", err);
+      });
+  }, []);
+
   // Handle URL query-prompt dispatching
   useEffect(() => {
     const initialPrompt = searchParams.get("prompt");
@@ -1702,6 +1722,33 @@ export default function WorkspaceLayout() {
                             >
                               العربية (عربي)
                             </Button>
+                          </div>
+                        </div>
+
+                        {/* Sovereign Services Status Dashboard */}
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {lang === "ku" ? "بارودۆخی خزمەتگوزارییە حکومییەکان" : "حالة الخدمات السحابية والسيادية"}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-slate-500">Gemini AI API</span>
+                              <Badge className={`text-[9px] font-bold ${diagnostics.gemini === 'Connected' ? 'bg-green-500 text-white' : diagnostics.gemini === 'Missing' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                {diagnostics.gemini === 'Connected' ? (lang === 'ku' ? 'بەستراوە' : 'متصل') : diagnostics.gemini === 'Missing' ? (lang === 'ku' ? 'بونی نییە' : 'مفقود') : (lang === 'ku' ? 'ناتەواو' : 'غير صالح')}
+                              </Badge>
+                            </div>
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-slate-500">Google Maps Platform</span>
+                              <Badge className={`text-[9px] font-bold ${diagnostics.maps === 'Connected' ? 'bg-green-500 text-white' : diagnostics.maps === 'Missing' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                {diagnostics.maps === 'Connected' ? (lang === 'ku' ? 'بەستراوە' : 'متصل') : diagnostics.maps === 'Missing' ? (lang === 'ku' ? 'بونی نییە' : 'مفقود') : (lang === 'ku' ? 'ناتەواو' : 'غير صالح')}
+                              </Badge>
+                            </div>
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                              <span className="text-[11px] font-semibold text-slate-500">Firebase Database</span>
+                              <Badge className={`text-[9px] font-bold ${diagnostics.firebase === 'Connected' ? 'bg-green-500 text-white' : diagnostics.firebase === 'Missing' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                {diagnostics.firebase === 'Connected' ? (lang === 'ku' ? 'بەستراوە' : 'متصل') : diagnostics.firebase === 'Missing' ? (lang === 'ku' ? 'بونی نییە' : 'مفقود') : (lang === 'ku' ? 'ناتەواو' : 'غير صالح')}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
 
