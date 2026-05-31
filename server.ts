@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 
 import { chatRouter } from "./server/routes/chat";
@@ -23,7 +24,6 @@ async function startServer() {
     // Firebase checking
     let firebaseStatus = "Missing";
     try {
-      const fs = require('fs');
       const fcPath = path.join(process.cwd(), 'firebase-applet-config.json');
       let fc: any = {};
       if (fs.existsSync(fcPath)) {
@@ -38,7 +38,7 @@ async function startServer() {
       } else {
         firebaseStatus = "Connected";
       }
-    } catch (e) {
+    } catch {
       firebaseStatus = "Invalid";
     }
 

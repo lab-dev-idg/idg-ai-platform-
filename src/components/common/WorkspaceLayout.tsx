@@ -61,6 +61,16 @@ export default function WorkspaceLayout() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Chat parameters matching original Home Page
+  const {
+    messages,
+    input,
+    isLoading,
+    setInput,
+    setSelectedMessage,
+    handleSend
+  } = useChatStore();
+
   // Tab state for switching between National Executive Command Center dashboard & Interactive National AI Assistant chat
   const [activeCenterTab, setActiveCenterTab] = useState<"command" | "assistant">("command");
   // Alert filtering state
@@ -209,15 +219,7 @@ export default function WorkspaceLayout() {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  // Chat parameters matching original Home Page
-  const {
-    messages,
-    input,
-    isLoading,
-    setInput,
-    setSelectedMessage,
-    handleSend
-  } = useChatStore();
+  // Already initialized at the top level of the component
 
   return (
     <div 
