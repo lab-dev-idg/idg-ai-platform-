@@ -31,10 +31,8 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
-  AlertCircle,
   ExternalLink,
-  CheckCircle2,
-  TrendingDown
+  CheckCircle2
 } from "lucide-react";
 
 // Features Import
@@ -52,6 +50,7 @@ import { ScenarioSimulationEngine } from "@/features/intelligence/components/Sce
 import { EconomicKnowledgeGraph } from "@/features/intelligence/components/EconomicKnowledgeGraph";
 import { EarlyWarningSystem, SecurityGovernancePane } from "@/features/intelligence/components/IntelligenceSupportingElements";
 import { StatsSection } from "@/features/dashboard";
+import { GovernmentShowcase } from "@/features/dashboard/components/GovernmentShowcase";
 
 // Design Token Imports
 import { typography } from "@/design-system/typography";
@@ -154,7 +153,8 @@ export default function WorkspaceLayout() {
     ],
     operations: [
       { id: "analytics", labelKu: "شیكردنەوە و هەڵسەنگاندن", labelAr: "التحليل والتقييم", path: "/analytics", icon: TrendingUp },
-      { id: "command", labelKu: "هاوشێوەسازی و بڕیاردان", labelAr: "العمليات والمحاكاة", path: "/command", icon: Terminal }
+      { id: "command", labelKu: "هاوشێوەسازی و بڕیاردان", labelAr: "العمليات والمحاكاة", path: "/command", icon: Terminal },
+      { id: "showcase", labelKu: "نمایشی فەرمی دەوڵەت", labelAr: "العرض الوطني الحكومي", path: "/showcase", icon: Activity }
     ],
     system: [
       { id: "admin", labelKu: "بەڕێوەبردن و چاودێری", labelAr: "الإدارة والنظام", path: "/admin", icon: Lock },
@@ -795,6 +795,7 @@ export default function WorkspaceLayout() {
                 {pathname === "/knowledge" && (lang === "ku" ? "تۆڕی گرێدراوی فەرمی کاڵاکان، بەستەرەکان، و ڕێسا بازرگانییەکان" : "الترابط الهيكلي الاقتصادي ودليل مرجعية السلع")}
                 {pathname === "/analytics" && (lang === "ku" ? "شاخص و نەخشەی جووڵەی گشتی کاڵاکانی هاوردە لە عێراق" : "مؤشرات التجارة الخارجية والتدفقات السلعية والمالية")}
                 {pathname === "/command" && (lang === "ku" ? "هاوشێوەسازی ڕێچکەی بازرگانی و کاریگەری بڕیار لەسەر بازاڕ" : "محاكاة السياسات الجمركية والإنذار المبكر للأزمات")}
+                {pathname === "/showcase" && (lang === "ku" ? "سەکۆی ڕاستەوخۆی نیشاندانی تاقیکاری ژیری دەستکرد بۆ سەرۆکایەتی حکومەت" : "حزمة العرض والتحاكي الوطني الموجهة للمجلس والمستوى الحكومي")}
                 {pathname === "/admin" && (lang === "ku" ? "چاودێری یەکپارچەی لۆگەکانی سیستەم و ئۆدێتی چالاکییەکان" : "سجلات الأمان والتحقق من العمليات التشغيلية")}
                 {pathname === "/settings" && (lang === "ku" ? "پێوەر و زانیاری ڕێکخستنی سەکۆی نیشتمانی" : "تفضيلات وإعدادات النظام واللغة المستهدفة")}
                 {pathname === "/profile" && (lang === "ku" ? "وردەکاری ئاسایشی حساب و مۆڵەتە دەوڵەتییەکان" : "ملف تعريف المستخدم والتحقق التشغيلي الموثوق")}
@@ -1620,6 +1621,13 @@ export default function WorkspaceLayout() {
                           <SecurityGovernancePane />
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* WORKSPACE: GOVERNMENT SHOWCASE */}
+                  {pathname === "/showcase" && (
+                    <div className="w-full">
+                      <GovernmentShowcase />
                     </div>
                   )}
 

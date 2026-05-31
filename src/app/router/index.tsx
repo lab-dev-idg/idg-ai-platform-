@@ -35,6 +35,7 @@ export function AppRouter() {
           <Route path="/knowledge" element={<WorkspaceLayout />} />
           <Route path="/analytics" element={<WorkspaceLayout />} />
           <Route path="/command" element={<WorkspaceLayout />} />
+          <Route path="/showcase" element={<WorkspaceLayout />} />
           <Route path="/admin" element={<WorkspaceLayout />} />
           <Route path="/settings" element={<WorkspaceLayout />} />
           <Route path="/profile" element={<WorkspaceLayout />} />
