@@ -85,14 +85,14 @@ export function StatsSection() {
         <div className="flex flex-wrap items-center gap-2.5 z-10">
           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 py-1.5 px-3 rounded-xl flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[10px] font-bold tracking-wider uppercase font-mono">
+            <span className="text-[10px] font-bold tracking-wider uppercase font-sans">
               {localText.systemHealth}
             </span>
           </Badge>
           <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 py-1.5 px-3 rounded-xl flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[10px] font-bold tracking-wider uppercase font-mono">
-              AGENT STBY // IDG_NET_OK
+            <span className="text-[10px] font-bold tracking-wider uppercase font-sans">
+              {lang === 'ku' ? "سیستەم: چالاک و پارێزراو" : "النظام: فعال ومؤمن"}
             </span>
           </Badge>
         </div>
@@ -107,7 +107,7 @@ export function StatsSection() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Badge className="bg-blue-600/20 text-[#3385ff] border border-blue-500/20 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                  MODULE PORTAL
+                  {lang === 'ku' ? "پۆرتالی نیشتمانی" : "البوابة الرسمية الوطنية"}
                 </Badge>
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               </div>

@@ -19,7 +19,8 @@ interface OperationalEvent {
   timestamp: string;
   type: 'SHIPMENT' | 'CUSTOMS' | 'AI_NOTICE' | 'AUDIT';
   severity: 'INFO' | 'WARNING' | 'CRITICAL';
-  message: string;
+  messageKu: string;
+  messageAr: string;
   hash?: string;
 }
 
@@ -31,9 +32,9 @@ const LIVE_WORKFLOWS: WorkflowItem[] = [
 ];
 
 const OPERATIONAL_EVENTS: OperationalEvent[] = [
-  { id: 'evt_1', timestamp: '10:48:15', type: 'AUDIT', severity: 'CRITICAL', message: 'HS tariff discrepancy flagged on auto-assessment for cargo 8703.', hash: 'sha256:0d6c...f4a1' },
-  { id: 'evt_2', timestamp: '10:15:30', type: 'AI_NOTICE', severity: 'INFO', message: 'HS Classification suggestions auto-optimized for telecommunication hardware.' },
-  { id: 'evt_3', timestamp: '09:40:12', type: 'CUSTOMS', severity: 'WARNING', message: 'Umm Qasr South Terminal reporting peak custom clearance volume.' }
+  { id: 'evt_1', timestamp: '10:48:15', type: 'AUDIT', severity: 'CRITICAL', messageKu: 'جیاوازی تاریفەی کۆدی گومرگی دەستنیشانکرا لەلایەن سیستەمی خۆکار بۆ باری ٨٧٠٣.', messageAr: 'تم رصد اختلاف في رمز التعرفة الجمركية عبر التقييم الآلي للشحنة رقم 8703.', hash: 'sha256:0d6c...f4a1' },
+  { id: 'evt_2', timestamp: '10:15:30', type: 'AI_NOTICE', severity: 'INFO', messageKu: 'پێشنیارەکانی پۆلێنکردنی کۆدی HS خۆکار بەرزکرانەوە بۆ ئامێرەکانی پەیوەندی.', messageAr: 'تم تحسين تصنيفات التعرفة الجمركية الذكية آلياً لأجهزة شبكات الاتصال.' },
+  { id: 'evt_3', timestamp: '09:40:12', type: 'CUSTOMS', severity: 'WARNING', messageKu: 'بەندەری باشووری ئوم قەسر ڕاپۆرتی لەسەر قەرەباڵغی بەرزی کاری گومرگی دا.', messageAr: 'ميناء أم قصر الجنوبي يسجل حجم تدفق جمركي مرتفع حالياً.' }
 ];
 
 export function CustomsModule() {
@@ -84,11 +85,11 @@ export function CustomsModule() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg md:text-xl font-bold tracking-tight text-white">{localText.title}</h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-mono font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  GATEWAY ACTIVE // CORE_NET_OK
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-sans font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  {lang === 'ku' ? "دەروازەکە چالاکە" : "البوابة نشطة"}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/35">
-                  SYSTEM COMPLIANCE: ENFORCED
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-sans font-bold tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/35">
+                  {lang === 'ku' ? "پابەندبوونی گومرگی: چالاک" : "الامتثال الجمركي: مفعل"}
                 </span>
               </div>
               <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed max-w-3xl">
@@ -178,7 +179,7 @@ export function CustomsModule() {
                   <span className="w-1.5 h-3 rounded bg-[#0066FF]" />
                   {lang === 'ku' ? "دۆخی رەوتی گومرگ" : "سلسلة الإجراءات الجمركية"}
                 </span>
-                <span className="text-[9px] bg-blue-50 text-[#0066FF] px-1.5 rounded font-mono font-bold select-none">4 ACTIVE</span>
+                <span className="text-[9px] bg-blue-50 text-[#0066FF] px-1.5 rounded font-sans font-bold select-none">{lang === 'ku' ? "٤ چالاک" : "٤ نشط"}</span>
               </h3>
 
               <div className="space-y-3">
@@ -188,21 +189,28 @@ export function CustomsModule() {
                   if (item.status === 'UNDER_REVIEW') badgeStyle = "bg-blue-50 text-[#0066FF]/90 border-blue-200/60";
                   if (item.status === 'ESCALATED') badgeStyle = "bg-rose-50 text-rose-700 border-rose-200/60";
 
+                  const localizedStatus = {
+                    APPROVED: lang === 'ku' ? "پەسەندکراو" : "موافق عليه",
+                    UNDER_REVIEW: lang === 'ku' ? "لە ژێر وردبینی" : "قيد المراجعة",
+                    PENDING: lang === 'ku' ? "چاوەڕوانە" : "قيد الانتظار",
+                    ESCALATED: lang === 'ku' ? "سەربارەکراوە" : "تم التصعيد"
+                  }[item.status];
+
                   return (
                     <div key={item.id} className="p-3 border rounded-xl hover:bg-slate-50/50 transition-all border-slate-100/80 flex flex-col gap-2 relative">
                       <div className="flex items-center justify-between text-[11px] font-mono font-bold">
                         <span className="text-slate-700">{item.declarationId}</span>
-                        <span className={`px-2 py-0.5 rounded text-[8px] border font-black tracking-wide ${badgeStyle}`}>
-                          {item.status}
+                        <span className={`px-2 py-0.5 rounded text-[8px] border font-sans font-black tracking-wide ${badgeStyle}`}>
+                          {localizedStatus}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
                         <span>{lang === 'ku' ? "بریکار:" : "المخلص:"} {item.broker}</span>
                         <span>{item.date}</span>
                       </div>
-                      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 mt-1">
-                        <span>HS: {item.hsCode}</span>
-                        <span>Qty: {item.itemsCount} pcs</span>
+                      <div className="flex items-center justify-between text-[9px] font-sans text-slate-400 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 mt-1">
+                        <span>{lang === 'ku' ? "کۆدی گومرگی:" : "الرمز الجمركي:"} {item.hsCode}</span>
+                        <span>{lang === 'ku' ? `بڕ: ${item.itemsCount} دانە` : `الكمية: ${item.itemsCount} وحدة`}</span>
                       </div>
                     </div>
                   );
@@ -227,12 +235,17 @@ export function CustomsModule() {
                           evt.severity === 'CRITICAL' ? 'bg-rose-500 animate-pulse' : 
                           evt.severity === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
                         }`} />
-                        <span className="font-bold text-slate-700">{evt.message}</span>
+                        <span className="font-bold text-slate-700">
+                          {lang === 'ku' ? evt.messageKu : evt.messageAr}
+                        </span>
                       </div>
                       {evt.hash && (
                         <div className="mt-1 text-[8px] font-mono text-slate-400 select-all border border-dashed border-slate-100 p-1 bg-slate-50/50 rounded flex items-center justify-between">
                           <span>{evt.hash}</span>
-                          <span className="text-[7px] text-[#0066FF] flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> SECURE</span>
+                          <span className="text-[7px] text-[#0066FF] flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> 
+                            {lang === 'ku' ? "سیادی پارێزراو" : "سيادي مؤمن"}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -260,8 +273,10 @@ export function CustomsModule() {
           </div>
           <div>
             <h4 className="text-xs font-bold text-[#071739] dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <span>AI Operations Co-Pilot</span>
-              <span className="text-[9px] bg-[#0066FF]/15 text-[#0066FF] px-1.5 py-0.5 rounded font-mono font-black select-none tracking-widest leading-none">READY</span>
+              <span>{lang === 'ku' ? "سیستەمی هۆشمەندی نیشتمانی" : "النظام الذكي الوطني"}</span>
+              <span className="text-[9px] bg-[#0066FF]/15 text-[#0066FF] px-1.5 py-0.5 rounded font-sans font-black select-none tracking-widest leading-none">
+                {lang === 'ku' ? "ئامادەیە" : "جاهز"}
+              </span>
             </h4>
             <p className="text-[11px] text-slate-500 font-semibold mt-1 leading-normal">
               {lang === 'ku' 
@@ -301,9 +316,11 @@ export function CustomsModule() {
         </div>
       </div>
 
-      <div className="text-[10px] text-slate-400 font-mono flex justify-between items-center bg-white border px-4 py-2.5 rounded-2xl shadow-2xs" id="customs-status-footer">
+      <div className="text-[10px] text-slate-400 font-sans flex justify-between items-center bg-white border px-4 py-2.5 rounded-2xl shadow-2xs" id="customs-status-footer">
         <span className="font-semibold">{lang === 'ku' ? "دۆخی گومرگ: مۆڵەتپێدراو" : "الحالة الأمنية: جاهز"}</span>
-        <span className="font-semibold">IDG TERMINAL SEC_v2.6</span>
+        <span className="font-semibold">
+          {lang === 'ku' ? "بەرێوەبەرایەتی گشتی دەروازە گومرگییەکان" : "المديرية العامة للمنافذ الجمركية"}
+        </span>
       </div>
     </div>
   );

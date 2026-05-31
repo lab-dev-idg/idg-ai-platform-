@@ -28,7 +28,13 @@ import {
   Bell,
   Clock,
   ShieldAlert,
-  Activity
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight,
+  AlertCircle,
+  ExternalLink,
+  CheckCircle2,
+  TrendingDown
 } from "lucide-react";
 
 // Features Import
@@ -55,6 +61,11 @@ export default function WorkspaceLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Tab state for switching between National Executive Command Center dashboard & Interactive National AI Assistant chat
+  const [activeCenterTab, setActiveCenterTab] = useState<"command" | "assistant">("command");
+  // Alert filtering state
+  const [filterAlertSeverity, setFilterAlertSeverity] = useState<"ALL" | "CRITICAL" | "WARNING" | "INFO">("ALL");
 
   // Handle sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -134,7 +145,7 @@ export default function WorkspaceLayout() {
   // Sidebar navigation structure config
   const navigationItems = {
     main: [
-      { id: "assistant", labelKu: "یاریدەدەری زیرەک", labelAr: "المساعد الذكي", path: "/", icon: Sparkles },
+      { id: "assistant", labelKu: "یارمەتیدەری زیرەکی نیشتمانی", labelAr: "المساعد الذكي الوطني", path: "/", icon: Sparkles },
       { id: "customs", labelKu: "دەروازەی گومرگ", labelAr: "بوابة الجمارك", path: "/customs", icon: Globe },
       { id: "logistics", labelKu: "لۆجیستیک و چاودێری", labelAr: "التتبع واللوجستيات", path: "/logistics", icon: Compass },
       { id: "banking", labelKu: "دارایی و دراو", labelAr: "الخدمات المصرفية والنقد", path: "/banking", icon: Coins },
@@ -142,7 +153,7 @@ export default function WorkspaceLayout() {
       { id: "knowledge", labelKu: "تۆڕی زانیاری بەستراو", labelAr: "قاعدة المعرفة والربط", path: "/knowledge", icon: Database }
     ],
     operations: [
-      { id: "analytics", labelKu: "شیکاری و ڕاپۆرتەکان", labelAr: "التحليلات والمؤشرات", path: "/analytics", icon: TrendingUp },
+      { id: "analytics", labelKu: "شیكردنەوە و هەڵسەنگاندن", labelAr: "التحليل والتقييم", path: "/analytics", icon: TrendingUp },
       { id: "command", labelKu: "هاوشێوەسازی و بڕیاردان", labelAr: "العمليات والمحاكاة", path: "/command", icon: Terminal }
     ],
     system: [
@@ -212,8 +223,12 @@ export default function WorkspaceLayout() {
             </div>
             {!isSidebarCollapsed && (
               <div className="flex flex-col truncate">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-100">Iraq Digital Gateway</span>
-                <span className="text-[9px] text-[#0066FF] font-bold tracking-widest uppercase">IDG Enterprise Core</span>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-100">
+                  {lang === "ku" ? "دەروازەی دیجیتاڵی عێراق" : "بوابة العراق الرقمية"}
+                </span>
+                <span className="text-[9px] text-[#0066FF] font-bold tracking-widest uppercase">
+                  {lang === "ku" ? "سیستەمی فەرمی دەوڵەت" : "النظام الرسمي للدولة"}
+                </span>
               </div>
             )}
           </Link>
@@ -411,8 +426,12 @@ export default function WorkspaceLayout() {
                     <Globe className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex flex-col text-right">
-                    <span className="text-xs font-black uppercase tracking-wider">Iraq Digital Gateway</span>
-                    <span className="text-[9px] text-[#0066FF] font-bold tracking-widest uppercase">IDG Enterprise Core</span>
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      {lang === "ku" ? "دەروازەی دیجیتاڵی عێراق" : "بوابة العراق الرقمية"}
+                    </span>
+                    <span className="text-[9px] text-[#0066FF] font-bold tracking-widest uppercase">
+                      {lang === "ku" ? "سیستەمی فەرمی دەوڵەت" : "النظام الرسمي للدولة"}
+                    </span>
                   </div>
                 </div>
                 <Button 
@@ -576,11 +595,13 @@ export default function WorkspaceLayout() {
 
             {/* Breadcrumb Area within shell */}
             <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <span className="text-slate-400 select-none">IDG</span>
+              <span className="text-slate-400 select-none">
+                {lang === "ku" ? "بۆردی نیشتمانی" : "المجلس الوطني"}
+              </span>
               <span>/</span>
               <span className="text-[#0066FF] font-bold flex items-center gap-1.5 capitalize">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" />
-                {activeItem ? getLabel(activeItem) : "System Workspace"}
+                {activeItem ? getLabel(activeItem) : (lang === "ku" ? "کابینەی فەرمی" : "مقصورة العمليات")}
               </span>
             </div>
           </div>
@@ -759,10 +780,10 @@ export default function WorkspaceLayout() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                  {activeItem ? getLabel(activeItem) : "Digital Workspace Core"}
+                  {activeItem ? getLabel(activeItem) : (lang === "ku" ? "داشبۆردی نیشتمانی" : "لوحة القيادة الوطنية")}
                 </h2>
-                <Badge variant="outline" className="text-[8px] md:text-[9px] uppercase tracking-wide px-1.5 py-0.5 border-slate-200 dark:border-slate-700 font-mono text-slate-500 dark:text-slate-400">
-                  {activeItem ? `GATEWAY_${activeItem.id.toUpperCase()}` : "ACTIVE"}
+                <Badge variant="outline" className="text-[8px] md:text-[9px] uppercase tracking-wide px-1.5 py-0.5 border-slate-200 dark:border-slate-700 font-sans text-slate-500 dark:text-slate-400">
+                  {lang === "ku" ? "سیستەمی فەرمی" : "النظام المصدق"}
                 </Badge>
               </div>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
@@ -781,10 +802,10 @@ export default function WorkspaceLayout() {
             </div>
 
             {/* Quick Status Pill / System state indicator representing sovereign clearance */}
-            <div className="flex items-center gap-2 select-none self-start md:self-auto font-mono text-[10px]">
+            <div className="flex items-center gap-2 select-none self-start md:self-auto font-sans text-[10px]">
               <span className="text-slate-400">{lang === "ku" ? "ئاسایش:" : "الأمن:"}</span>
               <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-bold uppercase tracking-wider">
-                Clearance lvl 4
+                {lang === "ku" ? "ڕێگەپێدانی فەرمی: ئاستی باڵا" : "ترخيص أمني: درجة سيادية"}
               </span>
             </div>
           </div>
@@ -804,58 +825,595 @@ export default function WorkspaceLayout() {
                   className="h-full flex flex-col"
                 >
                   
-                  {/* WORKSPACE 1: AI ASSISTANT (Chat focus with Notion spacing) */}
+                  {/* WORKSPACE 1: AI ASSISTANT & NATIONAL EXECUTIVE COMMAND CENTER */}
                   {(pathname === "/" || pathname === "/assistant") && (
-                    <div className="w-full h-full flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-20">
-                      <div className="lg:col-span-8 h-full flex flex-col bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-                        <div className="flex-1 min-h-0 flex flex-col">
-                          <ChatInterface
-                            messages={messages}
-                            input={input}
-                            setInput={setInput}
-                            isLoading={isLoading}
-                            handleSend={handleSend}
-                            setSelectedMessage={setSelectedMessage}
-                          />
-                        </div>
-                      </div>
-                      <div className="lg:col-span-4 space-y-4">
-                        <div className="bg-[#071739] text-white p-5 rounded-2xl shadow-sm border border-white/5 flex flex-col gap-3">
-                          <h4 className="font-bold text-xs uppercase text-slate-400 tracking-wider flex items-center gap-1.5 select-none">
-                            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                            {lang === "ku" ? "پۆرتالی زیرەک" : "البوابة الذكية"}
-                          </h4>
-                          <h3 className="text-base font-black tracking-tight leading-tight">
-                            {lang === "ku" ? "پێشنیارە خیراکان" : "المقترحات السريعة"}
-                          </h3>
-                          <p className="text-xs text-slate-300 leading-relaxed font-sans mt-1">
-                            {lang === "ku" 
-                              ? "دەتوانیت پرسیار بکەیت سەبارەت بە تاریفەکان، یاسا نوێیەکانی باج، کاتەکانی چاوەڕوانی لە مەرزی زاخۆ، یان چۆنیەتی هاوردەکردنی مۆبایل و کۆمپیوتەر."
-                              : "بإمكانك الاستفسار عن تفاصيل التعرفة الجمركية الرسمية، ومحاكي قرارات النفط والإنذار المبكر للسلع."}
-                          </p>
-                          <div className="mt-2 space-y-1.5 text-slate-100 text-[11px]">
-                            <button onClick={() => setInput(lang === "ku" ? "نرخی تاریفەی کۆمپیوتەری هاوردە چەندە؟" : "كم هي تعرفة استيراد الحاسبات؟")} className="w-full text-right hover:text-blue-200 bg-white/5 p-2 rounded-lg font-semibold transition truncate cursor-pointer">
-                              💡 {lang === "ku" ? "نرخی تاریفەی کۆمپیوتەری هاوردە" : "تعرفة الجمارك للحاسبات المحمولة"}
-                            </button>
-                            <button onClick={() => setInput(lang === "ku" ? "کاتەکانی چاوەڕوانی مەرزی زاخۆ" : "أوقات الانتظار في منفذ زاخو")} className="w-full text-right hover:text-blue-200 bg-white/5 p-2 rounded-lg font-semibold transition truncate cursor-pointer">
-                              💡 {lang === "ku" ? "کاتەکانی چاوەڕوانی مەرزی زاخۆ" : "حساب أوقات منفذ زاخو الجمركي"}
-                            </button>
+                    <div className="w-full h-full flex-1 flex flex-col gap-6 pb-20">
+                      
+                      {/* Premium Executive Tab Bar Switcher */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white dark:bg-[#1e293b] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 bg-[#0066FF]/10 text-[#0066FF] rounded-xl">
+                            <Activity className="w-5 h-5 flex items-center justify-center text-[#0066FF]" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                              {lang === "ku" ? "بنکەی نیشتمانی بۆ چاودێری و بڕیاردان" : "المركز الوطني للمراقبة واتخاذ القرار"}
+                            </h3>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium font-sans">
+                              {lang === "ku" ? "سیستەمی فەرمی سەرپەرشتی حکومەتی فیدراڵی عێراق" : "النظام الرسمي الموحد لحكومة جمهورية العراق الفيدرالية"}
+                            </p>
                           </div>
                         </div>
-                        <div className="bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-                          <div className="flex items-center gap-1.5">
-                            <Activity className="w-4 h-4 text-green-500 shrink-0" />
-                            <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300">
-                              {lang === "ku" ? "پەیوەندی ئەمنی" : "الاتصال التشغيلي"}
-                            </h4>
-                          </div>
-                          <p className="text-[11px] text-slate-400 leading-normal">
-                            {lang === "ku" 
-                              ? "پەیوەندی لەگەڵ کۆرپەستۆری عێراق بە تەواوی پارێزراوە بە پرۆتۆکۆلی AES-256."
-                              : "اتصالك مشفر بالكامل ومسجل في سجلات الحوكمة الحكومية."}
-                          </p>
+
+                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border dark:border-slate-700">
+                          <button
+                            onClick={() => setActiveCenterTab("command")}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              activeCenterTab === "command"
+                                ? "bg-white dark:bg-[#071739] text-[#0066FF] dark:text-white shadow-xs"
+                                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                            }`}
+                          >
+                            {lang === "ku" ? "تەلاری بڕیاردان و چاودێری نیشتمانی" : "مجمع العمليات والقيادة الوطني"}
+                          </button>
+                          <button
+                            onClick={() => setActiveCenterTab("assistant")}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              activeCenterTab === "assistant"
+                                ? "bg-white dark:bg-[#071739] text-[#0066FF] dark:text-white shadow-xs"
+                                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                            }`}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+                              {lang === "ku" ? "یارمەتیدەری زیرەکی نیشتمانی" : "المساعد الذكي التفاعلي الوطني"}
+                            </span>
+                          </button>
                         </div>
                       </div>
+
+                      {activeCenterTab === "command" ? (
+                        /* NATIONAL OPERATIONS CENTER (THE CORE COMMAND CENTER VIEW) */
+                        <div className="w-full h-full flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-6">
+                          
+                          {/* Main Left Side (9 grid columns) */}
+                          <div className="lg:col-span-9 flex flex-col gap-6">
+                            
+                            {/* TOP: National Status Bar with 6 KPI Large Cards */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                              
+                              {/* Card 1: Active Transactions */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-blue-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "کارامەییە چالاکەکان" : "المعاملات النشطة اليوم"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">٤،٢٨٠</span>
+                                  <span className="text-[10px] text-green-500 font-bold flex items-center gap-0.5">
+                                    <ArrowUpRight className="w-3 h-3" /> +12.4%
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-slate-500 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                  <span>{lang === "ku" ? "لە کاتی ڕاستەقینە" : "تحديث مباشر"}</span>
+                                </div>
+                              </div>
+
+                              {/* Card 2: Customs Clearances Today */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-blue-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "ڕێکارە گومرگییەکانی ئەمڕۆ" : "المخلصات الجمركية اليوم"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">٢،١٥٠</span>
+                                  <span className="text-[10px] text-green-500 font-bold flex items-center gap-0.5">
+                                    <ArrowUpRight className="w-3 h-3" /> +8.2%
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-slate-500 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                  <span>{lang === "ku" ? "سەکۆی فیدراڵی" : "المنصة الفيدرالية"}</span>
+                                </div>
+                              </div>
+
+                              {/* Card 3: National Risk Index */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-rose-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "شاخصی مەترسی نیشتمانی" : "مؤشر المخاطر الوطني"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">%١٤</span>
+                                  <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5">
+                                    <ArrowDownRight className="w-3 h-3" /> -3.5%
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-emerald-600 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  <span>{lang === "ku" ? "ئارام و سەقامگیر" : "مستقر ومؤمن"}</span>
+                                </div>
+                              </div>
+
+                              {/* Card 4: Compliance Rate */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-blue-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "ڕێژەی پابەندبوونی گشتی" : "نسبة الامتثال الكلية"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">%٩٧.٤</span>
+                                  <span className="text-[10px] text-green-500 font-bold flex items-center gap-0.5">
+                                    <ArrowUpRight className="w-3 h-3" /> +1.1%
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-slate-500 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF]" />
+                                  <span>{lang === "ku" ? "ئاستی جێبەجێکردن" : "معايير الحوكمة"}</span>
+                                </div>
+                              </div>
+
+                              {/* Card 5: AI Confidence Score */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-violet-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "ڕادەی متمانەی هۆشمەندی" : "ثقة الذكاء الاصطناعي"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">%٩٨.٢</span>
+                                  <span className="text-[10px] text-slate-400 font-bold flex items-center gap-0.5">
+                                    ✓ {lang === "ku" ? "جێگیر" : "مستقر"}
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-violet-600 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                  <span>{lang === "ku" ? "شیکاری هۆشەمەند فەعلە" : "توجيه ذكي فعال"}</span>
+                                </div>
+                              </div>
+
+                              {/* Card 6: System Health Score */}
+                              <div className="bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs hover:border-emerald-500/30 transition flex flex-col justify-between relative overflow-hidden group">
+                                <span className="text-[10px] text-slate-400 font-bold select-none truncate">
+                                  {lang === "ku" ? "تەندروستی گشتی سیستەم" : "سلامة وجودة النظام"}
+                                </span>
+                                <div className="mt-2 flex items-baseline justify-between">
+                                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">%١٠٠</span>
+                                  <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5">
+                                    ✓ {lang === "ku" ? "بێ کێشە" : "سليم"}
+                                  </span>
+                                </div>
+                                <div className="mt-3 text-[9px] text-emerald-600 font-medium flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  <span>{lang === "ku" ? "بەردەست بە تەواوی" : "فعال بالكامل"}</span>
+                                </div>
+                              </div>
+
+                            </div>
+
+                            {/* CENTER: Executive Intelligence Workspace (6 Bento Cards Grid) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              
+                              {/* 1. National Trade Overview */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-blue-500" />
+                                      {lang === "ku" ? "پوختەی بازرگانی نیشتمانی" : "موجز التجارة الخارجية الوطنية"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-blue-500/5 text-[#0066FF] border-[#0066FF]/20 text-[9px] py-0">{lang === "ku" ? "ساڵانە" : "سنوي"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "قەبارەی گشتی هاوردەی مانگانە گەیشتووەتە ملیارێک و ٤٥٠ ملیۆن دۆلار. هاوبەشە سەرەکییەکان: چین، تورکیا، دەوڵەتی ئیمارات."
+                                      : "إجمالي حجم التجارة الخارجية الشهري المستورد بلغ ١.٤٥ مليار دولار. الشركاء الرئيسيون: الصين، تركيا، الإمارات العربية."}
+                                  </p>
+                                  <div className="mt-4 space-y-2">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "چین" : "الصين / شحن بحري"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%٤٢</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-blue-500 rounded-full" style={{ width: "42%" }} />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "تورکیا" : "تركيا / شحن بري"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%٢٨</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-amber-500 rounded-full" style={{ width: "28%" }} />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "دواین نوێکردنەوە" : "آخر تدقيق تجاري"}</span>
+                                  <span className="text-[10px] text-[#0066FF] font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/analytics")}>
+                                    {lang === "ku" ? "بینینی شیکاری گەشتی" : "تحليل المؤشرات"} <Clock className="w-3 h-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 2. Customs Activity Summary */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-emerald-500" />
+                                      {lang === "ku" ? "پوختەی کاروڵە گومرگییەکان" : "ملخص العمليات الجمركية"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20 text-[9px] py-0">{lang === "ku" ? "خێرا" : "سريع"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "تێکڕای کاتی پێداچوونەوە و مۆڵەت تەنها ٣٢ خولەکە. ڕێژەی پۆلێنکردنی دروست %٩٩."
+                                      : "متوسط وقت تدقيق البيان والإفراج الجمركي بلغ ٣٢ دقيقة فقط. دقة الترميز بالتعرفة الذكية الـ HS بلغت ٩٩٪."}
+                                  </p>
+                                  <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                                    <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                      <span className="text-[9px] text-slate-400 block">{lang === "ku" ? "کاتی مۆڵەت" : "وقت الإفراج"}</span>
+                                      <span className="text-xs font-black text-slate-800 dark:text-white">٣٢ خولەک</span>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                      <span className="text-[9px] text-slate-400 block">{lang === "ku" ? "خۆکاربوون" : "أتمتة الفرز"}</span>
+                                      <span className="text-xs font-black text-emerald-600">%٩٥</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "دۆخی رەوتی گشتی" : "المعدل التشغيلي"}</span>
+                                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/customs")}>
+                                    {lang === "ku" ? "دەروازەی گومرگ" : "سجل العمليات"} <CheckCircle2 className="w-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 3. Import/Export Monitoring */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-[#0066FF]" />
+                                      {lang === "ku" ? "چاودێری هاوردە و هەناردە" : "مراقبة الاستيراد والتصدير"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-[#0066FF]/5 text-[#0066FF] border-[#0066FF]/20 text-[9px] py-0">{lang === "ku" ? "فەرمی" : "سيادي"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "دابەشبوونی هاوردە بەپێی جۆری کاڵاکان: ماددە خاوەکان، ئامێرە تەکنەلۆژییەکان، کاڵای خۆراکی، ماتۆڕسات."
+                                      : "تصنيف الموارد الواردة حالياً حسب القطاع العراقي: كابلات ومواد أولية، تكنولوجيا الشبكات، الأغذية."}
+                                  </p>
+                                  <div className="mt-4 space-y-2">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "کەرەستەی خاو" : "المواد الإنشائية والخام"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%٤٨</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-[#0066FF] rounded-full" style={{ width: "48%" }} />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "تەکنەلۆژیا و پەیوەندی" : "الإلكترونيات والاتصالات"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%٣٢</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-purple-500 rounded-full" style={{ width: "32%" }} />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "موربەکردن" : "جدول التصنيفات"}</span>
+                                  <span className="text-[10px] text-purple-600 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/analytics")}>
+                                    {lang === "ku" ? "پشکنینی گشتی" : "السلع والتعرفة"} <ExternalLink className="w-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 4. Strategic Risk Heatmap */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-rose-500" />
+                                      {lang === "ku" ? "نەخشەی گەرمی مەترسی ستراتیژی" : "خارطة المخاطر الجمركية"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-rose-500/5 text-rose-500 border-rose-500/20 text-[9px] py-0">{lang === "ku" ? "ئاسایشی" : "رصد سيادي"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "پێوانی مەترسی لە مەرزی زاخۆ (%١٢ - نزم)، مەرزی ئوم قەسر (%١٨ - مامناوەند)، فڕۆکەخانەی بەغداد (%٨ - زۆر نزم)."
+                                      : "مؤشر الرصد: منفذ زاخو الجمركي (١٢٪ - منخفض)، ميناء أم قصر (١٨٪ - متوسط)، مطار بغداد الفيدرالي (٨٪ - ضئيل)."}
+                                  </p>
+                                  <div className="mt-4 space-y-2 text-[11px] font-sans">
+                                    <div className="flex justify-between items-center py-1 border-b border-dashed border-slate-100 dark:border-slate-800">
+                                      <span className="text-slate-400">{lang === "ku" ? "مەرزی زاخۆ / سەرەکی" : "منفذ زاخو الحدودي"}</span>
+                                      <span className="text-green-500 font-bold">%١٢ ({lang === "ku" ? "پارێزراو" : "آمن"})</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1 border-b border-dashed border-slate-100 dark:border-slate-800">
+                                      <span className="text-slate-400">{lang === "ku" ? "بەندەری ئوم قەسر" : "ميناء أم قصر الجنوبي"}</span>
+                                      <span className="text-amber-500 font-bold">%١٨ ({lang === "ku" ? "مامناوەند" : "مستقر"})</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1">
+                                      <span className="text-slate-400">{lang === "ku" ? "فڕۆکەخانەی نێودەوڵەتی" : "مطار بغداد التجاري"}</span>
+                                      <span className="text-green-500 font-bold">%٨ ({lang === "ku" ? "زۆر پارێزراو" : "ضئيل جداً"})</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "بەرێوەبردن" : "نظام الترخيص"}</span>
+                                  <span className="text-[10px] text-rose-600 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/compliance")}>
+                                    {lang === "ku" ? "پشکنینی دۆسێکان" : "تدقيق المخاطر"} <ShieldAlert className="w-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 5. AI Intelligence Findings & Direct Chat Link */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-violet-500 animate-pulse" />
+                                      {lang === "ku" ? "دۆزینەوەکانی هۆشمەندی دەستکرد" : "نتائج الاستخبارات الاصطناعية"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-violet-500/5 text-violet-500 border-violet-500/20 text-[9px] py-0">{lang === "ku" ? "هۆشمەند" : "فوري"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "سیستەمی هۆشمەندی نیشتمانی توانیویەتی ٣٢ هەوڵی تاریفەی جۆراوجۆر یان نادروست بەبێ فلتەری مرۆیی دەستنیشان بکات."
+                                      : "تمكن النظام الذكي الوطني كشف ٣٢ محاولة لتصنيف جمركي غير دقيق بنجاح ودون تدخل بشري."}
+                                  </p>
+                                  <div className="mt-4 bg-violet-500/5 dark:bg-violet-500/10 rounded-xl border border-violet-500/25 p-3 flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-violet-500 animate-ping" />
+                                      <span className="text-[10px] text-violet-750 dark:text-violet-400 font-bold">{lang === "ku" ? "یاریدەدەر ئامادەیە بۆ گفتوگۆ" : "المساعد جاهز للاستشارة"}</span>
+                                    </div>
+                                    <button 
+                                      onClick={() => setActiveCenterTab("assistant")}
+                                      className="text-right text-[11px] text-violet-600 dark:text-violet-400 font-bold hover:underline self-start cursor-pointer transition"
+                                    >
+                                      ✉ {lang === "ku" ? "ئێستا ڕاوێژ لەگەڵ ژیری بەدەست بێنە" : "افتح استشارة ذكية سيادية"}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "متمانە" : "صلاحية البيانات"}</span>
+                                  <span className="text-[10px] text-violet-600 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => setActiveCenterTab("assistant")}>
+                                    {lang === "ku" ? "بینینی پێشنیارەکان" : "موجز القرارات"} <Sparkles className="w-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 6. Logistics Performance Overview */}
+                              <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <span className="w-1.5 h-3 rounded bg-purple-500" />
+                                      {lang === "ku" ? "پوختەی ئەدای لۆجیستیک" : "قياس الأداء اللوجستي"}
+                                    </h4>
+                                    <Badge variant="outline" className="bg-purple-500/5 text-purple-500 border-purple-500/20 text-[9px] py-0">{lang === "ku" ? "کرداری" : "مؤمن"}</Badge>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    {lang === "ku" 
+                                      ? "تێکڕای کاتی چاوەڕوانی تانکەرەکان لە مەرزەکان دەگاتە ٢٠ خولەک. گەیشتنی پارێزراوی بارهەڵگرەکان لە %٩٩.٨ دەکات."
+                                      : "متوسط انتظار الشاحنات اللوجستية بلغ ٢٠ دقيقة. مؤشر الوصول الآمن والناجح للبضائع سجل ٩٩.٨٪ كفاءة."}
+                                  </p>
+                                  <div className="mt-4 space-y-2">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "ڕووپۆشەکان" : "شهادات المطابقة"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%١٠٠</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: "100%" }} />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="text-slate-400">{lang === "ku" ? "چاوەڕوانی کانکان" : "تراكمات المنافذ"}</span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-300">%٢</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-850 rounded-full overflow-hidden">
+                                      <div className="h-full bg-violet-500 rounded-full" style={{ width: "2%" }} />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">{lang === "ku" ? "کۆنترۆڵە ئەمنییەکان" : "التأمين اللوجستي"}</span>
+                                  <span className="text-[10px] text-purple-600 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/logistics")}>
+                                    {lang === "ku" ? "ڕاپۆرتی لۆجیستیک" : "جدول تتبع المنافذ"} <Compass className="w-3" />
+                                  </span>
+                                </div>
+                              </div>
+
+                            </div>
+
+                          </div>
+                          
+                          {/* Main Right Side (3 grid columns): National Alerts & AI Insights Panel */}
+                          <div className="lg:col-span-3 flex flex-col gap-6">
+                            <div className="bg-white dark:bg-[#0f172a] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-full bg-gradient-to-b from-white to-slate-50/50 dark:from-[#0f172a] dark:to-slate-900/60">
+                              
+                              <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                                  <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0" />
+                                  {lang === "ku" ? "بنکەی زانیاری و هاوئاگادارییەکان" : "مركز الإنذار والتحليلات السيادية"}
+                                </h3>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {lang === "ku" ? "وردبینیکردنی بەردەوام لەلایەن دۆسیەی ئەمنی گومرگ" : "مراقبة مستمرة تحت إشراف هيئة المنافذ الجمركية"}
+                                </p>
+                              </div>
+
+                              {/* Alert level filters */}
+                              <div className="mt-4 flex flex-wrap gap-1.5 bg-slate-100 dark:bg-slate-850 p-1 rounded-lg">
+                                <button
+                                  onClick={() => setFilterAlertSeverity("ALL")}
+                                  className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer transition ${
+                                    filterAlertSeverity === "ALL" ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs" : "text-slate-500 hover:text-slate-700"
+                                  }`}
+                                >
+                                  {lang === "ku" ? "هەموو" : "الكل"}
+                                </button>
+                                <button
+                                  onClick={() => setFilterAlertSeverity("CRITICAL")}
+                                  className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer transition ${
+                                    filterAlertSeverity === "CRITICAL" ? "bg-rose-500 text-white shadow-xs" : "text-slate-500 hover:text-slate-700"
+                                  }`}
+                                >
+                                  {lang === "ku" ? "مەترسیدار" : "خطير"}
+                                </button>
+                                <button
+                                  onClick={() => setFilterAlertSeverity("WARNING")}
+                                  className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer transition ${
+                                    filterAlertSeverity === "WARNING" ? "bg-amber-500 text-white shadow-xs" : "text-slate-500 hover:text-slate-700"
+                                  }`}
+                                >
+                                  {lang === "ku" ? "ئاگاداری" : "تحذير"}
+                                </button>
+                              </div>
+
+                              {/* Dynamic Alerts List */}
+                              <div className="mt-4 flex-1 overflow-y-auto space-y-3.5 select-all pr-1 scrollbar-thin">
+                                {[
+                                  {
+                                    id: "alt_1",
+                                    severity: "CRITICAL",
+                                    titleKu: "جمرکى زاخۆ: تباینی بەڵگەنامەیی",
+                                    descKu: "ئاستی مەترسی بەهۆی تێکچوونی بەڵگەنامە فەرمییەکانی مەرزی زاخۆ بەرز بووەتەوە.",
+                                    titleAr: "جمرك زاخو: تباين مستندي هام",
+                                    descAr: "ارتفاع مؤشر المخاطر الجمركية في منفذ زاخو بسبب عدم تطابق وثائق الشحن.",
+                                    time: "١٠:٤٢ BGW",
+                                    recKu: "ڕاسپاردەی فەرمی: ناردنی لێژنەی چاودێری بۆ مەرزی زاخۆ بۆ بەدواداچوونی مانیفێستەکان.",
+                                    recAr: "التوصية السيادية: توجيه مفرزة أمنية جمركية للتحقق من المانيفست في المنفذ."
+                                  },
+                                  {
+                                    id: "alt_2",
+                                    severity: "CRITICAL",
+                                    titleKu: "تاریفەی نادروستی تەکنەلۆژیا",
+                                    descKu: "هەڵاوسانی نائاسایی لە بەهای تاریفەی گومرگی ئامێرە تەکنەلۆژییەکان.",
+                                    titleAr: "تصنيف خاطئ: سلع تقنية",
+                                    descAr: "رصد انحراف جمركي حاد في تصنيف تعرفة الأجهزة التقنية المستوردة.",
+                                    time: "٠٩:١٥ BGW",
+                                    recKu: "ڕاسپاردەی فەرمی: جێبەجێکردنی کاتیی لێکۆڵینەوەی تاریفەی جۆراوجۆر لە پۆلێنی کاڵاکاندا.",
+                                    recAr: "التوصية السيادية: تطبيق مرحلة التدقيق التلقائي المؤقت لرموز الـ HS."
+                                  },
+                                  {
+                                    id: "alt_3",
+                                    severity: "WARNING",
+                                    titleKu: "قەرەباڵغی بەندەری ئوم قەسر",
+                                    descKu: "قەرەباڵغی بەرز لە بەندەری ئوم قەسر تۆمار کراوە کە دەبێتە هۆی دواکەوتنی بارهەڵگرەکان.",
+                                    titleAr: "ميناء أم قصر: شحن بحري",
+                                    descAr: "ازدحام شديد وتسجيل تأخير في محطة حاويات ميناء أم قصر الجنوبي.",
+                                    time: "٠٨:٣٠ BGW",
+                                    recKu: "ڕاسپاردەی فەرمی: بەهێزکردنی خشتەی بڵاوکردنەوەی کارمەندانی گومرگ لە هۆڵی پشکنین.",
+                                    recAr: "التوصية السيادية: تدوير نوبات المخلصين وتحديث مسارات الشحن الخضراء."
+                                  },
+                                  {
+                                    id: "alt_4",
+                                    severity: "WARNING",
+                                    titleKu: "متمانەی نووسراوی بازرگانی گەنم",
+                                    descKu: "کەمی متمانەی بەڵگەنامەی دڵنیایی بازرگانی لە گرێبەستێکی گەورەی هاوردەی گەنم.",
+                                    titleAr: "اعتماد تجاري: شحنة قمح",
+                                    descAr: "انخفاض مؤشر الموثوقية في مستندات الاعتماد التجاري لشحنة قمح كبرى.",
+                                    time: "٠٧:٥٠ BGW",
+                                    recKu: "ڕاسپاردەی فەرمی: هەڵپەساردنی هەمیشەیی تا هەڵسەنگاندنی نوێی KYC.",
+                                    recAr: "التوصية السيادية: تعليق براءة الذمة المالية لشركة الاستيراد مؤقتاً."
+                                  },
+                                  {
+                                    id: "alt_5",
+                                    severity: "INFO",
+                                    titleKu: "سیستەمی هۆشمەندی گومرگی چالاک بوو",
+                                    descKu: "سیستەمی هۆشمەندی نیشتمانی نوێترین رێسا و مەرجەکانی هاوردەی نوێکردەوە.",
+                                    titleAr: "تحديث النظام: قواعد التعرفة المحدثة",
+                                    descAr: "تم تفعيل القواعد الجمركية المستحدثة لسنة ٢٠٢٦ بنجاح عبر النظام الذكي.",
+                                    time: "٠٦:٠٠ BGW",
+                                    recKu: "ڕاسپاردەی فەرمی: پێداچوونەوە بە شاخصی کارایی بۆ خولەکانی گشتی داهاتوو.",
+                                    recAr: "التوصية السيادية: مراجعة لوحة البيانات لاتخاذ قرارات التخصيص المالية."
+                                  }
+                                ]
+                                  .filter(item => filterAlertSeverity === "ALL" || item.severity === filterAlertSeverity)
+                                  .map((item) => {
+                                    let itemColor = "border-blue-500/10 bg-blue-500/5";
+                                    let badgeColor = "bg-blue-100 text-blue-750";
+                                    if (item.severity === "CRITICAL") {
+                                      itemColor = "border-rose-500/20 bg-rose-500/5";
+                                      badgeColor = "bg-rose-100 text-rose-700";
+                                    } else if (item.severity === "WARNING") {
+                                      itemColor = "border-amber-500/20 bg-amber-500/5";
+                                      badgeColor = "bg-amber-100 text-amber-700";
+                                    }
+
+                                    return (
+                                      <div key={item.id} className={`p-3 border rounded-xl flex flex-col gap-2 relative ${itemColor} transition`}>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] font-black tracking-tight text-slate-800 dark:text-white">
+                                            {lang === "ku" ? item.titleKu : item.titleAr}
+                                          </span>
+                                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${badgeColor}`}>
+                                            {item.severity === "CRITICAL" ? (lang === "ku" ? "مەترسیدار" : "خطير") : item.severity === "WARNING" ? (lang === "ku" ? "ئاگاداری" : "تحذير") : (lang === "ku" ? "زانیاری" : "معلومات")}
+                                          </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 leading-relaxed font-sans font-medium">
+                                          {lang === "ku" ? item.descKu : item.descAr}
+                                        </p>
+                                        <div className="bg-slate-100 dark:bg-slate-850 p-2 rounded-lg text-[9px] border dark:border-slate-800 text-slate-600 dark:text-slate-300 font-sans font-semibold">
+                                          {lang === "ku" ? item.recKu : item.recAr}
+                                        </div>
+                                        <span className="text-[8px] text-slate-400 block text-end font-mono mt-0.5">{item.time}</span>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+
+                            </div>
+                          </div>
+
+                        </div>
+                      ) : (
+                        /* NATIONAL AI ASSISTANT CHAT SYSTEM */
+                        <div className="w-full h-full flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-6">
+                          <div className="lg:col-span-8 h-full flex flex-col bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+                            <div className="flex-1 min-h-0 flex flex-col">
+                              <ChatInterface
+                                messages={messages}
+                                input={input}
+                                setInput={setInput}
+                                isLoading={isLoading}
+                                handleSend={handleSend}
+                                setSelectedMessage={setSelectedMessage}
+                              />
+                            </div>
+                          </div>
+                          <div className="lg:col-span-4 space-y-4">
+                            <div className="bg-[#071739] text-white p-5 rounded-2xl shadow-sm border border-white/5 flex flex-col gap-3">
+                              <h4 className="font-bold text-xs uppercase text-slate-400 tracking-wider flex items-center gap-1.5 select-none font-sans">
+                                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                {lang === "ku" ? "پۆرتالی زیرەک" : "البوابة الذكية"}
+                              </h4>
+                              <h3 className="text-base font-black tracking-tight leading-tight">
+                                {lang === "ku" ? "پێشنیارە خیراکان" : "المقترحات السريعة"}
+                              </h3>
+                              <p className="text-xs text-slate-300 leading-relaxed font-sans mt-1">
+                                {lang === "ku" 
+                                  ? "دەتوانیت پرسیار بکەیت سەبارەت بە تاریفەکان، یاسا نوێیەکانی باج، کاتەکانی چاوەڕوانی لە مەرزی زاخۆ، یان چۆنیەتی هاوردەکردنی مۆبایل و کۆمپیوتەر."
+                                  : "بإمكانك الاستفسار عن تفاصيل التعرفة الجمركية الرسمية، ومحاكي قرارات النفط والإنذار المبكر للسلع."}
+                              </p>
+                              <div className="mt-2 space-y-1.5 text-slate-100 text-[11px] font-sans">
+                                <button onClick={() => setInput(lang === "ku" ? "نرخی تاریفەی کۆمپیوتەری هاوردە چەندە؟" : "كم هي تعرفة استيراد الحاسبات؟")} className="w-full text-right hover:text-blue-200 bg-white/5 p-2 rounded-lg font-semibold transition truncate cursor-pointer">
+                                  💡 {lang === "ku" ? "نرخی تاریفەی کۆمپیوتەری هاوردە" : "تعرفة الجمارك للحاسبات المحمولة"}
+                                </button>
+                                <button onClick={() => setInput(lang === "ku" ? "کاتەکانی چاوەڕوانی مەرزی زاخۆ" : "أوقات الانتظار في منفذ زاخو")} className="w-full text-right hover:text-blue-200 bg-white/5 p-2 rounded-lg font-semibold transition truncate cursor-pointer">
+                                  💡 {lang === "ku" ? "کاتەکانی چاوەڕوانی مەرزی زاخۆ" : "حساب أوقات منفذ زاخو الجمركي"}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 font-sans">
+                              <div className="flex items-center gap-1.5">
+                                <Activity className="w-4 h-4 text-green-500 shrink-0" />
+                                <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300">
+                                  {lang === "ku" ? "پەیوەندی ئەمنی" : "الاتصال التشغيلي"}
+                                </h4>
+                              </div>
+                              <p className="text-[11px] text-slate-400 leading-normal">
+                                {lang === "ku" 
+                                  ? "پەیوەندی لەگەڵ کۆرپەستۆری عێراق بە تەواوی پارێزراوە بە پرۆتۆکۆلی AES-256."
+                                  : "اتصالك مشفر بالكامل ومسجل في سجلات الحوكمة الحكومية."}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
