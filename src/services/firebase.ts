@@ -41,7 +41,7 @@ async function testConnection() {
     }
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
+      console.warn("Firebase client is offline. This is expected in server sandboxes or environments without active external route connection. Please check your Firebase configuration if you are running in a fully connected client browser.");
     }
   }
 }
