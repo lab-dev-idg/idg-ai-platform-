@@ -53,6 +53,7 @@ async function startServer() {
   });
 
   app.use("/api/chat", chatRouter);
+  app.use("/api/chats", chatRouter);
   app.use("/api/actions", actionRouter);
 
   // Vite middleware for development
