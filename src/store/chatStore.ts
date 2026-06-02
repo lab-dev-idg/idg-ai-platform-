@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useSettingsStore } from './settingsStore';
+import { useAuthStore } from './authStore';
 
 export interface ChatMessage {
   id?: string;
@@ -10,10 +11,21 @@ export interface ChatMessage {
   confidence?: number;
   metadata?: unknown;
   citations?: string[];
+  timestamp?: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
 }
 
 interface ChatState {
   messages: ChatMessage[];
+  chats: ChatSession[];
+  activeChatId: string | null;
   input: string;
   isLoading: boolean;
   selectedMessage: ChatMessage | null;
@@ -24,16 +36,33 @@ interface ChatState {
   addMessage: (message: ChatMessage) => void;
   setIsLoading: (isLoading: boolean) => void;
   setSelectedMessage: (message: ChatMessage | null) => void;
+  createNewChat: () => void;
+  loadChats: () => Promise<void>;
+  selectChat: (chatId: string) => Promise<void>;
+  deleteChat: (chatId: string) => Promise<void>;
   handleSend: (text?: string) => Promise<void>;
 }
+
+// Helper to get default greeting based on active language
+const getDefaultGreeting = (): string => {
+  const lang = useSettingsStore.getState().lang || 'ku';
+  if (lang === 'ar') {
+    return 'مرحباً بك في بوابة العراق الرقمية (IDG Gateway). كيف يمكنني مساعدتك في شؤون الجمارك والخدمات اللوجستية الوطنية اليوم؟';
+  } else if (lang === 'en') {
+    return 'Welcome to the Iraq Digital Gateway (IDG Gateway). How can I assist you with national customs and logistics operations today?';
+  }
+  return 'بەخێربێیت بۆ بوابة العراق الرقمية (IDG Gateway). چۆن دەتوانم یارمەتیت بدەم لە کاروباری گومرگ و دەروازە نیشتمانییەکاندا؟';
+};
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
     {
       role: 'model',
-      text: 'بەخێربێیت بۆ IDG Gateway',
+      text: getDefaultGreeting(),
     },
   ],
+  chats: [],
+  activeChatId: null,
   input: '',
   isLoading: false,
   selectedMessage: null,
@@ -44,23 +73,111 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setSelectedMessage: (message) => set({ selectedMessage: message }),
 
+  /**
+   * Resets the active chat session to start a brand new conversation
+   */
+  createNewChat: () => {
+    set({
+      activeChatId: null,
+      messages: [
+        {
+          role: 'model',
+          text: getDefaultGreeting(),
+        },
+      ],
+      input: '',
+    });
+  },
+
+  /**
+   * Loads all historical chats belonging to the active user
+   */
+  loadChats: async () => {
+    try {
+      const userId = useAuthStore.getState().user?.uid || 'guest_user';
+      const response = await fetch(`/api/chats?userId=${userId}`);
+      if (response.ok) {
+        const chatsList = await response.json();
+        set({ chats: chatsList });
+      }
+    } catch (err) {
+      console.error("Zustand chatStore loadChats failure:", err);
+    }
+  },
+
+  /**
+   * Selects an existing chat and populates the feed with loaded messages
+   */
+  selectChat: async (chatId: string) => {
+    set({ isLoading: true, activeChatId: chatId });
+    try {
+      const response = await fetch(`/api/chat/${chatId}`);
+      if (response.ok) {
+        const detail = await response.json();
+        const activeMessages: ChatMessage[] = detail.messages || [];
+        
+        // If there are no messages, fall back to default greeting
+        if (activeMessages.length === 0) {
+          set({
+            messages: [{ role: 'model', text: getDefaultGreeting() }]
+          });
+        } else {
+          set({
+            messages: activeMessages.map(m => ({
+              role: m.role,
+              text: m.text,
+              timestamp: m.timestamp
+            }))
+          });
+        }
+      } else {
+        console.warn(`Failed to resolve details for chat ${chatId}`);
+      }
+    } catch (err) {
+      console.error("Zustand selectChat error:", err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  /**
+   * Deletes a chat session
+   */
+  deleteChat: async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        // Refresh local listings
+        await get().loadChats();
+        
+        // If we deleted the actively opened chat, reset back to new state
+        if (get().activeChatId === chatId) {
+          get().createNewChat();
+        }
+      }
+    } catch (err) {
+      console.error("Zustand deleteChat error:", err);
+    }
+  },
+
+  /**
+   * Sends user prompt. Unified for single source of truth: Title and Chat Session are both generated backend.
+   */
   handleSend: async (text?: string) => {
-    const { input, messages, isLoading, addMessage, setInput, setIsLoading } = get();
+    const { input, isLoading, activeChatId, addMessage, setInput, setIsLoading, loadChats } = get();
     
     const messageText = text || input;
     if (!messageText.trim() || isLoading) return;
 
+    // 1. Instantly append user's prompt to UI state for responsive tactile feedback
     const userMessage: ChatMessage = { role: 'user', text: messageText };
     addMessage(userMessage);
     setInput('');
     setIsLoading(true);
 
     try {
-      const chatHistory = messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.text }]
-      }));
-
       const lang = useSettingsStore.getState().lang || 'ku';
       const isCustomsMode = typeof window !== 'undefined' && window.location.pathname === '/customs';
       const currentModule = isCustomsMode ? 'Customs & Tariff Central Hub' : 'Unified Logistics Dashboard (Main)';
@@ -68,7 +185,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ? 'Active Customs Workspace (Calculations and Border Gateway Regulation)' 
         : 'General Logistics Inquiries';
 
+      const userId = useAuthStore.getState().user?.uid || 'guest_user';
+
       const activeContext = {
+        userId,
         language: lang,
         currentModule,
         customsWorkflowState,
@@ -80,99 +200,48 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       };
 
-      const response = await fetch('/api/chat/stream', {
+      // 2. Perform REST API invocation to single orchestrator entry-point
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: messageText,
-          history: chatHistory,
+          chatId: activeChatId || undefined,
           context: activeContext
         }),
       });
 
-      if (!response.ok || !response.body) throw new Error('Failed to get response');
-      
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      
-      let fullText = '';
-      
-      // Add empty model message first
-      const streamMessageId = Date.now().toString();
-      addMessage({ role: 'model', text: '', id: streamMessageId });
-      
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
-        
-        let displayString = fullText;
-        try {
-          // If it's done or perfectly formed JSON, parse it
-          const parsed = JSON.parse(fullText);
-          displayString = parsed.payload?.text || fullText;
-        } catch {
-          // Try to extract payload.text while streaming
-          const match = fullText.match(/"text"\s*:\s*"([^]*)/);
-          if (match && match[1]) {
-            // Remove trailing quotes and slashes added during escape
-            let extracted = match[1];
-            // Roughly find end of string if it exists
-            const endIdx = extracted.lastIndexOf('"');
-            if (endIdx > 0) extracted = extracted.substring(0, endIdx);
-            
-            // Unescape basic newlines for display
-            displayString = extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-          }
-        }
-        
-        // Update the last message in store (which is our streaming model message)
-        set((state) => {
-          const newMessages = [...state.messages];
-          const lastMsg = newMessages[newMessages.length - 1];
-          if (lastMsg && lastMsg.role === 'model') {
-            lastMsg.text = displayString;
-          }
-          return { messages: newMessages };
-        });
+      if (!response.ok) {
+        throw new Error('Sovereign node returned error response status.');
       }
 
-      // Final post-stream parse to capture the structured AI action model fields
-      try {
-        const parsed = JSON.parse(fullText);
-        set((state) => {
-          const newMessages = [...state.messages];
-          const lastMsg = newMessages[newMessages.length - 1];
-          if (lastMsg && lastMsg.role === 'model') {
-            lastMsg.text = parsed.payload?.text || parsed.text || lastMsg.text;
-            lastMsg.action = parsed.action || 'DISPLAY_MESSAGE';
-            lastMsg.payload = parsed.payload;
-            lastMsg.confidence = parsed.confidence || 0.95;
-            lastMsg.metadata = parsed.metadata || {};
-            lastMsg.citations = parsed.citations || [];
-          }
-          return { messages: newMessages };
-        });
-      } catch (jsonErr) {
-        console.warn("Done streaming, but content was not valid JSON. Keeping text-fallback.", jsonErr);
-        
-        // Attempt manual regex extraction of structure as fallback
-        set((state) => {
-          const newMessages = [...state.messages];
-          const lastMsg = newMessages[newMessages.length - 1];
-          if (lastMsg && lastMsg.role === 'model' && !lastMsg.action) {
-            lastMsg.action = 'DISPLAY_MESSAGE';
-            lastMsg.confidence = 0.90;
-            lastMsg.metadata = { parsedViaFallback: true };
-          }
-          return { messages: newMessages };
-        });
-      }
+      const rawData = await response.json();
+      
+      // Target response format: { chatId, title, response, createdAt }
+      const newChatId = rawData.chatId;
+      const modelText = rawData.response;
+
+      // 3. Update the active chatId dynamically (frontend never generates titles or IDs)
+      set({ activeChatId: newChatId });
+
+      // 4. Append model response to UI feed
+      addMessage({
+        role: 'model',
+        text: modelText,
+        confidence: 0.98,
+        action: 'DISPLAY_MESSAGE'
+      });
+
+      // 5. Trigger instant silent background refresh of lists to show new/renamed sessions instantly
+      await loadChats();
     } catch (error) {
-      console.error('Chat error:', error);
-      addMessage({ role: 'model', text: 'ببوورە دووچاری کێشەیەک بووم لە کاتی پەیوەندی کردن بە سێرڤەر.' });
+      console.error('Unified handleSend error:', error);
+      addMessage({ 
+        role: 'model', 
+        text: lang === 'ar' 
+          ? 'عذراً، حدث خطأ أثناء محاولة الاتصال بالخادم المركزي.' 
+          : 'ببوورە دووچاری کێشەیەک بووم لە کاتی پەیوەندی کردن بە سێرڤەری سەرەکی.' 
+      });
     } finally {
       setIsLoading(false);
     }

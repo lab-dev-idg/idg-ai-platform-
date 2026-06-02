@@ -1,72 +1,87 @@
 import express, { Request, Response } from 'express';
-import { GeminiProvider } from '../ai/providers/gemini';
-import { ChatOrchestrator } from '../ai/orchestration/ChatOrchestrator';
-import { sessionMemoryMiddleware, adminGuardMiddleware } from '../ai/middleware/sessionMiddleware';
-import { AIContext, AIMessage } from '../../src/services/ai/types';
+import { FirestoreRepository } from '../services/firestore';
+import { ChatOrchestrator } from '../services/chat';
 
 export const chatRouter = express.Router();
 
-let orchestrator: ChatOrchestrator | null = null;
-
-function getOrchestrator() {
-  if (!orchestrator) {
-    const apiKey = process.env.GEMINI_API_KEY || "";
-    const provider = new GeminiProvider(apiKey);
-    orchestrator = new ChatOrchestrator(provider);
-    
-    // Wire up enterprise middlewares
-    orchestrator.useMiddleware(sessionMemoryMiddleware);
-    orchestrator.useMiddleware(adminGuardMiddleware);
-  }
-  return orchestrator;
-}
-
-chatRouter.post('/stream', async (req: Request, res: Response) => {
+/**
+ * POST /api/chat
+ * Accepts: { message: string, chatId?: string, context?: any }
+ * Returns: { chatId, title, response, createdAt }
+ */
+chatRouter.post('/', async (req: Request, res: Response) => {
   try {
-    const { message, history, context } = req.body;
-    const orch = getOrchestrator();
-
-    interface RequestHistoryMessage {
-      role: string;
-      parts?: { text?: string }[];
+    const { message, chatId, context } = req.body;
+    
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: "Message input string is required." });
     }
 
-    const _history: AIMessage[] = (history || []).map((m: RequestHistoryMessage) => ({
-      role: m.role === 'model' ? 'model' : 'user',
-      content: m.parts?.[0]?.text || ''
-    }));
+    const result = await ChatOrchestrator.processMessage(message, chatId, context);
+    return res.json(result);
+  } catch (error: any) {
+    console.error("POST /api/chat error:", error);
+    return res.status(500).json({ error: error?.message || "Failed to process chat conversation." });
+  }
+});
 
-    // Append latest interaction
-    const messages: AIMessage[] = [..._history, { role: 'user', content: message }];
+/**
+ * GET /api/chats
+ * Query: ?userId=xxx
+ * Returns: Array of chat sessions [{ id, title, createdAt, updatedAt, userId }, ...]
+ */
+chatRouter.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query.userId as string) || 'guest_user';
+    const chats = await FirestoreRepository.getChats(userId);
+    return res.json(chats);
+  } catch (error: any) {
+    console.error("GET /api/chats error:", error);
+    return res.status(500).json({ error: error?.message || "Failed to fetch chat sessions." });
+  }
+});
 
-    const defaultContext: AIContext = {
-      language: context?.language || 'ku',
-      userId: context?.userId,
-      role: context?.role,
-      currentModule: context?.currentModule,
-      customsWorkflowState: context?.customsWorkflowState,
-      shipmentId: context?.shipmentId,
-      operationalState: context?.operationalState,
-    };
-
-    const stream = orch.streamResponse(messages, defaultContext);
-
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Transfer-Encoding', 'chunked');
-
-    for await (const chunk of stream) {
-      if (chunk.text) {
-        res.write(chunk.text);
-      }
+/**
+ * GET /api/chat/:chatId
+ * Returns: { chatId, title, messages: [{ role, text, timestamp }, ...] }
+ */
+chatRouter.get('/:chatId', async (req: Request, res: Response) => {
+  try {
+    const { chatId } = req.params;
+    const session = await FirestoreRepository.getChat(chatId);
+    
+    if (!session) {
+      return res.status(404).json({ error: `Chat session ${chatId} not found.` });
     }
-    res.end();
-  } catch (error) {
-    const err = error as Error;
-    console.error("Chat Server Error:", err.message || err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: err.message || "Failed to generate response" });
-    } else {
-      res.end();
-    }
+
+    const messages = await FirestoreRepository.getMessages(chatId);
+    
+    return res.json({
+      chatId: session.id,
+      title: session.title,
+      messages: messages.map(m => ({
+        role: m.role,
+        text: m.text,
+        timestamp: m.timestamp
+      }))
+    });
+  } catch (error: any) {
+    console.error(`GET /api/chat/${req.params.chatId} error:`, error);
+    return res.status(500).json({ error: error?.message || "Failed to fetch chat detailed session." });
+  }
+});
+
+/**
+ * DELETE /api/chat/:chatId
+ * Returns: { success: true }
+ */
+chatRouter.delete('/:chatId', async (req: Request, res: Response) => {
+  try {
+    const { chatId } = req.params;
+    await FirestoreRepository.deleteChat(chatId);
+    return res.json({ success: true, message: `Successfully deleted chat ${chatId}.` });
+  } catch (error: any) {
+    console.error(`DELETE /api/chat/${req.params.chatId} error:`, error);
+    return res.status(500).json({ error: error?.message || "Failed to delete chat session." });
   }
 });
