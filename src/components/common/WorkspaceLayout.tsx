@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useChatStore } from "@/store/chatStore";
 import { Toaster } from "@/shared/ui/toaster";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Layout components
 import { WorkspaceHeader } from "../workspace/WorkspaceHeader";
@@ -61,43 +62,45 @@ export default function WorkspaceLayout() {
   const dir = isRtl ? "rtl" : "ltr";
 
   return (
-    <div 
-      id="idg-workspace-shell" 
-      className="h-screen w-screen flex overflow-hidden bg-slate-50 text-[#071739] font-sans antialiased" 
-      dir={dir}
-    >
-      {/* Drawer and Sidebar triggers */}
-      <WorkspaceSidebar 
-        lang={lang}
-        pathname={pathname}
-        isSidebarCollapsed={isSidebarCollapsed}
-        setIsSidebarCollapsed={setIsSidebarCollapsed}
-        isMobileSidebarOpen={isMobileSidebarOpen}
-        setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-        startNewSession={startNewSession}
-      />
-
-      {/* Primary content view container */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-        <WorkspaceHeader 
+    <ErrorBoundary>
+      <div 
+        id="idg-workspace-shell" 
+        className="h-screen w-screen flex overflow-hidden bg-slate-50 text-[#071739] font-sans antialiased" 
+        dir={dir}
+      >
+        {/* Drawer and Sidebar triggers */}
+        <WorkspaceSidebar 
           lang={lang}
-          setLang={setLang}
-          t={t}
+          pathname={pathname}
+          isSidebarCollapsed={isSidebarCollapsed}
+          setIsSidebarCollapsed={setIsSidebarCollapsed}
+          isMobileSidebarOpen={isMobileSidebarOpen}
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-        />
-        
-        {/* Dynamic Inner Router view */}
-        <WorkspaceContent 
-          lang={lang}
-          setLang={setLang}
+          startNewSession={startNewSession}
         />
 
-        <WorkspaceFooter 
-          lang={lang}
-        />
+        {/* Primary content view container */}
+        <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
+          <WorkspaceHeader 
+            lang={lang}
+            setLang={setLang}
+            t={t}
+            setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+          />
+          
+          {/* Dynamic Inner Router view */}
+          <WorkspaceContent 
+            lang={lang}
+            setLang={setLang}
+          />
+
+          <WorkspaceFooter 
+            lang={lang}
+          />
+        </div>
+
+        <Toaster />
       </div>
-
-      <Toaster />
-    </div>
+    </ErrorBoundary>
   );
 }

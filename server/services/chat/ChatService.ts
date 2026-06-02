@@ -10,25 +10,35 @@ export interface ProcessedMessageResult {
 
 export const ChatService = {
   /**
-   * Retrieves all chats for a given user
+   * Retrieves all chats for a given user, isolated by tenant, with pagination/search.
    */
-  async getChatsForUser(userId: string): Promise<BackendChatSession[]> {
+  async getChatsForUser(
+    userId: string,
+    tenantId: string,
+    limitVal: number = 100,
+    startAfterId?: string,
+    searchTerm?: string
+  ): Promise<{ chats: BackendChatSession[]; hasMore: boolean }> {
     try {
-      return await ChatRepository.getChats(userId);
+      return await ChatRepository.getChats(userId, tenantId, limitVal, startAfterId, searchTerm);
     } catch (err) {
       console.error("ChatService getChatsForUser failure:", err);
-      return [];
+      return { chats: [], hasMore: false };
     }
   },
 
   /**
-   * Resolves specific chat detail info
+   * Resolves specific chat detail info with user/tenant checks
    */
-  async getChatDetail(chatId: string): Promise<{ session: BackendChatSession; messages: BackendChatMessage[] } | null> {
+  async getChatDetail(
+    chatId: string,
+    userId: string,
+    tenantId: string
+  ): Promise<{ session: BackendChatSession; messages: BackendChatMessage[] } | null> {
     try {
-      const session = await ChatRepository.getChat(chatId);
+      const session = await ChatRepository.getChat(chatId, userId, tenantId);
       if (!session) return null;
-      const messages = await ChatRepository.getMessages(chatId);
+      const messages = await ChatRepository.getMessages(chatId, userId, tenantId);
       return { session, messages };
     } catch (err) {
       console.error(`ChatService getChatDetail(${chatId}) failure:`, err);
@@ -42,41 +52,42 @@ export const ChatService = {
   async processUserMessage(
     message: string,
     chatId: string | undefined,
+    userId: string,
+    tenantId: string,
     context: any
   ): Promise<ProcessedMessageResult> {
     try {
-      const userId = context?.userId || 'guest_user';
       let activeId = chatId;
       let title = '';
 
       if (!activeId) {
         // First message ever! Generate a max 6-word title.
         title = await GeminiService.generateTitle(message);
-        // Ensure strictly max 6 words (client-side safety truncate just in case)
         const words = title.split(/\s+/);
         if (words.length > 6) {
           title = words.slice(0, 6).join(' ') + '...';
         }
-        activeId = await ChatRepository.createChat(userId, title);
+        activeId = await ChatRepository.createChat(userId, tenantId, title);
       } else {
-        const session = await ChatRepository.getChat(activeId);
+        const session = await ChatRepository.getChat(activeId, userId, tenantId);
         if (!session) {
+          // Fallback if session wasn't active or wasn't verified to current user/tenant
           title = await GeminiService.generateTitle(message);
           const words = title.split(/\s+/);
           if (words.length > 6) {
             title = words.slice(0, 6).join(' ') + '...';
           }
-          activeId = await ChatRepository.createChat(userId, title);
+          activeId = await ChatRepository.createChat(userId, tenantId, title);
         } else {
           title = session.title;
         }
       }
 
       // Store user prompt on server Firestore first
-      await ChatRepository.addMessage(activeId, 'user', message);
+      await ChatRepository.addMessage(activeId, userId, tenantId, 'user', message);
 
       // Fetch consolidated chat history to send to Gemini
-      const messagesList = await ChatRepository.getMessages(activeId);
+      const messagesList = await ChatRepository.getMessages(activeId, userId, tenantId);
       const history = messagesList
         .filter(m => m.role === 'user' || m.role === 'model')
         .map(m => ({
@@ -101,9 +112,9 @@ export const ChatService = {
       }
 
       // Store model response on server Firestore
-      await ChatRepository.addMessage(activeId, 'model', aiResponseText);
+      await ChatRepository.addMessage(activeId, userId, tenantId, 'model', aiResponseText);
 
-      const resolvedSession = await ChatRepository.getChat(activeId);
+      const resolvedSession = await ChatRepository.getChat(activeId, userId, tenantId);
 
       return {
         chatId: activeId,
@@ -124,11 +135,11 @@ export const ChatService = {
   },
 
   /**
-   * Delete chat and resources
+   * Delete chat and resources safely under tenant checking
    */
-  async deleteChatRecord(chatId: string): Promise<void> {
+  async deleteChatRecord(chatId: string, userId: string, tenantId: string): Promise<void> {
     try {
-      await ChatRepository.deleteChat(chatId);
+      await ChatRepository.deleteChat(chatId, userId, tenantId);
     } catch (err) {
       console.error(`ChatService deleteChatRecord(${chatId}) failure:`, err);
     }

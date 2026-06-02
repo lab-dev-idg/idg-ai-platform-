@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useChatStore, ChatMessage } from "@/store/chatStore";
 import { MessageItem } from "./MessageItem";
 import { ChatInputArea } from "./ChatInputArea";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 const QUICK_ACTIONS = [
   { label: "تێچووی کۆنتێنەر", icon: Package, prompt: "تێچووی هێنانی کۆنتێنەرێکی ٤٠ پێ لە چینەوە بۆ ئوم قەسر چەندە؟" },
@@ -54,7 +55,7 @@ export function ChatInterface({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Retrieve past sessions from optimized store
-  const { chats, activeChatId, loadChats, selectChat, createNewChat, deleteChat } = useChatStore();
+  const { chats, activeChatId, loadChats, selectChat, createNewChat, deleteChat, hasMore, searchTerm, setSearchTerm } = useChatStore();
 
   // Load chats on initial component mount
   useEffect(() => {
@@ -82,24 +83,37 @@ export function ChatInterface({
   const localizedDefaultChatTitle = lang === 'ku' ? "پرسار و وەڵام" : (lang === 'ar' ? "استفسار لوجستي" : "Customs Inquiry");
 
   return (
-    <Card className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 overflow-hidden border-none shadow-2xl bg-white rounded-[32px] h-[750px]">
-      
-      {/* LEFT RAIL: Chat History list (visible on desktop) */}
-      <div className="hidden md:flex md:col-span-3 flex-col border-r border-slate-100 bg-slate-50/40 h-full overflow-hidden">
-        {/* Top Header and action */}
-        <div className="p-4 border-b border-slate-100 flex-none">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 block">
-            {localizedHistoryTitle}
-          </h3>
-          <Button 
-            onClick={createNewChat}
-            className="w-full justify-start gap-2 text-xs font-semibold bg-[#0066FF] hover:bg-[#0052cc] text-white rounded-xl shadow-sm border-none"
-            size="sm"
-          >
-            <Plus className="w-4 h-4" />
-            {localizedNewChatBtn}
-          </Button>
-        </div>
+    <ErrorBoundary>
+      <Card className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 overflow-hidden border-none shadow-2xl bg-white rounded-[32px] h-[750px]">
+        
+        {/* LEFT RAIL: Chat History list (visible on desktop) */}
+        <div className="hidden md:flex md:col-span-3 flex-col border-r border-slate-100 bg-slate-50/40 h-full overflow-hidden">
+          {/* Top Header and action */}
+          <div className="p-4 border-b border-slate-100 flex-none space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              {localizedHistoryTitle}
+            </h3>
+            <Button 
+              onClick={createNewChat}
+              className="w-full justify-start gap-2 text-xs font-semibold bg-[#0066FF] hover:bg-[#0052cc] text-white rounded-xl shadow-sm border-none"
+              size="sm"
+            >
+              <Plus className="w-4 h-4" />
+              {localizedNewChatBtn}
+            </Button>
+            
+            {/* Realtime Search Input (Rule 7) */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={lang === 'ku' ? "گەڕان لە گفتوگۆکان..." : (lang === 'ar' ? "البحث في الاستفسارات..." : "Search sessions...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                id="sidebar-chat-search"
+              />
+            </div>
+          </div>
 
         {/* Sessions list */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -108,41 +122,56 @@ export function ChatInterface({
               {lang === 'ku' ? "هیچ گفتوگۆیەکی پیشوو نییە" : (lang === 'ar' ? "لا توجد محادثات سابقة" : "No past chats yet")}
             </div>
           ) : (
-            chats.map((session) => {
-              const isActive = session.id === activeChatId;
-              return (
-                <div 
-                  key={session.id}
-                  onClick={() => selectChat(session.id)}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition-all ${
-                    isActive 
-                      ? 'bg-blue-50/70 text-[#0066FF] font-semibold' 
-                      : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-950'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0 pr-1">
-                    <MessageSquare className={`w-3.5 h-3.5 flex-none ${isActive ? 'text-[#0066FF]' : 'text-slate-400'}`} />
-                    <span className="truncate text-right block max-w-[125px]">
-                      {session.title || localizedDefaultChatTitle}
-                    </span>
-                  </div>
-                  
-                  {/* Delete Button (visible on group hover) */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(lang === 'ku' ? "دڵنیای لە سڕینەوەی ئەم گفتوگۆیە؟" : (lang === 'ar' ? "هل أنت متأكد من حذف هذه المحادثة؟" : "Are you sure you want to delete this chat?"))) {
-                        deleteChat(session.id);
-                      }
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 hover:text-red-600 text-slate-400 transition-all flex-none"
-                    title="Delete Chat"
+            <>
+              {chats.map((session) => {
+                const isActive = session.id === activeChatId;
+                return (
+                  <div 
+                    key={session.id}
+                    onClick={() => selectChat(session.id)}
+                    className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition-all ${
+                      isActive 
+                        ? 'bg-blue-50/70 text-[#0066FF] font-semibold' 
+                        : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-950'
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    <div className="flex items-center gap-2 min-w-0 pr-1">
+                      <MessageSquare className={`w-3.5 h-3.5 flex-none ${isActive ? 'text-[#0066FF]' : 'text-slate-400'}`} />
+                      <span className="truncate text-right block max-w-[125px]">
+                        {session.title || localizedDefaultChatTitle}
+                      </span>
+                    </div>
+                    
+                    {/* Delete Button (visible on group hover) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(lang === 'ku' ? "دڵنیای لە سڕینەوەی ئەم گفتوگۆیە؟" : (lang === 'ar' ? "هل أنت متأكد من حذف هذه المحادثة؟" : "Are you sure you want to delete this chat?"))) {
+                          deleteChat(session.id);
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 hover:text-red-600 text-slate-400 transition-all flex-none"
+                      title="Delete Chat"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {hasMore && (
+                <div className="pt-2 px-1">
+                  <Button
+                    onClick={() => loadChats(true)}
+                    variant="ghost"
+                    className="w-full py-1.5 text-[10px] text-blue-600 hover:text-blue-800 hover:bg-blue-50/50 rounded-lg justify-center font-bold"
+                    size="sm"
+                  >
+                    {lang === 'ku' ? "زیاتر ببینە..." : (lang === 'ar' ? "تحميل المزيد..." : "Load more...")}
+                  </Button>
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </div>
       </div>
@@ -243,5 +272,6 @@ export function ChatInterface({
         </div>
       </div>
     </Card>
-  );
+  </ErrorBoundary>
+);
 }

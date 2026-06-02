@@ -56,6 +56,10 @@ async function startServer() {
   app.use("/api/chats", chatRouter);
   app.use("/api/actions", actionRouter);
 
+  // Global error diagnostic middleware
+  const { errorHandler } = await import("./server/middleware/errorHandler");
+  app.use(errorHandler);
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

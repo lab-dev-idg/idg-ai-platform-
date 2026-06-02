@@ -1,6 +1,4 @@
-import admin from 'firebase-admin';
-import fs from 'fs';
-import path from 'path';
+import { db } from '../firebase-admin';
 
 export interface BackendChatSession {
   id: string;
@@ -8,6 +6,9 @@ export interface BackendChatSession {
   createdAt: string;
   updatedAt: string;
   userId: string;
+  tenantId: string;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface BackendChatMessage {
@@ -17,230 +18,249 @@ export interface BackendChatMessage {
   timestamp: string;
 }
 
-let firebaseConfig: any = {};
-try {
-  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-  if (fs.existsSync(configPath)) {
-    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  }
-} catch (err) {
-  console.warn("Failed to load firebase-applet-config.json in ChatRepository:", err);
+export interface SystemAuditLog {
+  action: 'chat_created' | 'chat_deleted' | 'message_sent' | 'message_received';
+  userId: string;
+  tenantId: string;
+  chatId: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
 }
 
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '';
-
-if (!admin.apps.length) {
+async function writeAuditLog(
+  action: SystemAuditLog['action'],
+  userId: string,
+  tenantId: string,
+  chatId: string,
+  metadata?: Record<string, any>
+): Promise<void> {
   try {
-    admin.initializeApp({
-      projectId: projectId || undefined
+    const now = new Date().toISOString();
+    await db.collection('audit_logs').add({
+      action,
+      userId,
+      tenantId,
+      chatId,
+      timestamp: now,
+      metadata: metadata || {}
     });
   } catch (err) {
-    console.warn("Firebase Admin SDK init error, using empty config:", err);
-    admin.initializeApp();
+    console.error("Failed to write to audit_logs collection:", err);
   }
 }
-
-let db: any;
-try {
-  const dbId = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId;
-  if (dbId && dbId !== 'default') {
-    db = admin.firestore(dbId);
-  } else {
-    db = admin.firestore();
-  }
-} catch (e) {
-  console.warn("Failed to get named firestore database, falling back to default:", e);
-  db = admin.firestore();
-}
-
-// Memory fallback to ensure UI never crashes when Firestore is restricted/offline
-const inMemoryChats: Map<string, BackendChatSession> = new Map();
-const inMemoryMessages: Map<string, BackendChatMessage[]> = new Map();
 
 export const ChatRepository = {
-  async createChat(userId: string, title: string): Promise<string> {
-    try {
-      const id = 'chat_' + Math.random().toString(36).substring(2, 11);
-      const now = new Date().toISOString();
-      const chatDoc: BackendChatSession = {
-        id,
-        title,
-        userId,
-        createdAt: now,
-        updatedAt: now
-      };
+  /**
+   * Creates a new chat session document.
+   */
+  async createChat(userId: string, tenantId: string, title: string): Promise<string> {
+    const id = 'chat_' + Math.random().toString(36).substring(2, 11);
+    const now = new Date().toISOString();
+    const chatDoc: BackendChatSession = {
+      id,
+      title,
+      userId,
+      tenantId,
+      createdAt: now,
+      updatedAt: now
+    };
 
-      try {
-        await db.collection('chats').doc(id).set(chatDoc);
-      } catch (dbErr) {
-        console.error("FirestoreAdmin failure on createChat, using safe in-memory fallback:", dbErr);
-        inMemoryChats.set(id, chatDoc);
-      }
-
-      return id;
-    } catch (err) {
-      console.error("ChatRepository createChat critical error:", err);
-      const fallbackId = 'fallback_chat_' + Date.now();
-      return fallbackId;
-    }
+    await db.collection('chats').doc(id).set(chatDoc);
+    await writeAuditLog('chat_created', userId, tenantId, id, { title });
+    return id;
   },
 
-  async updateChatTitle(chatId: string, title: string): Promise<void> {
+  /**
+   * Updates an existing chat session's title under strict tenant check.
+   */
+  async updateChatTitle(chatId: string, userId: string, tenantId: string, title: string): Promise<void> {
+    const now = new Date().toISOString();
+    const chatRef = db.collection('chats').doc(chatId);
+    
+    await db.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(chatRef);
+      if (!docSnap.exists) {
+        throw new Error('Chat session not found');
+      }
+      const data = docSnap.data();
+      if (data?.userId !== userId || data?.tenantId !== tenantId) {
+        throw new Error('Unauthorized chat ownership');
+      }
+      transaction.update(chatRef, { title, updatedAt: now });
+    });
+  },
+
+  /**
+   * Retrieves all chat sessions for a user within a tenant, ordered by updatedAt desc, limit 100 with optional pagination and search filters.
+   */
+  async getChats(
+    userId: string,
+    tenantId: string,
+    limitVal: number = 100,
+    startAfterId?: string,
+    searchTerm?: string
+  ): Promise<{ chats: BackendChatSession[]; hasMore: boolean }> {
     try {
-      const now = new Date().toISOString();
-      try {
-        await db.collection('chats').doc(chatId).update({
+      let queryRef = db.collection('chats')
+        .where('userId', '==', userId)
+        .where('tenantId', '==', tenantId)
+        .orderBy('updatedAt', 'desc');
+
+      if (startAfterId) {
+        const startDoc = await db.collection('chats').doc(startAfterId).get();
+        if (startDoc.exists) {
+          queryRef = queryRef.startAfter(startDoc);
+        }
+      }
+
+      // Fetch a buffer to allow soft-delete filtering and search filtering without depleting the requested page size
+      const snapshot = await queryRef.limit(limitVal * 2 + 1).get();
+      const chatsList: BackendChatSession[] = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.deletedAt) {
+          return;
+        }
+
+        const title = data.title || 'Inquiry';
+        if (searchTerm && !title.toLowerCase().includes(searchTerm.toLowerCase())) {
+          return;
+        }
+
+        chatsList.push({
+          id: docSnap.id,
           title,
-          updatedAt: now
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          userId: data.userId,
+          tenantId: data.tenantId,
+          deletedAt: data.deletedAt || null,
+          deletedBy: data.deletedBy || null
         });
-      } catch (dbErr) {
-        console.error(`FirestoreAdmin updateChatTitle failed for ${chatId}, attempting in-memory:`, dbErr);
-        const memChat = inMemoryChats.get(chatId);
-        if (memChat) {
-          memChat.title = title;
-          memChat.updatedAt = now;
-        }
-      }
+      });
+
+      const slicedChats = chatsList.slice(0, limitVal);
+      const hasMore = chatsList.length > limitVal;
+
+      return { chats: slicedChats, hasMore };
     } catch (err) {
-      console.error("ChatRepository updateChatTitle catch-all:", err);
+      console.error("Failed to query chats from Firestore with paginated search:", err);
+      return { chats: [], hasMore: false };
     }
   },
 
-  async getChats(userId: string): Promise<BackendChatSession[]> {
-    try {
-      const chats: BackendChatSession[] = [];
-      try {
-        const snapshot = await db.collection('chats').where('userId', '==', userId).get();
-        snapshot.forEach((doc: any) => {
-          const data = doc.data();
-          chats.push({
-            id: doc.id,
-            title: data.title || 'Inquiry',
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            userId: data.userId
-          });
-        });
-      } catch (dbErr) {
-        console.error("FirestoreAdmin getChats failed, using in-memory collection:", dbErr);
-        inMemoryChats.forEach((chat) => {
-          if (chat.userId === userId) {
-            chats.push({ ...chat });
-          }
-        });
-      }
-
-      chats.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      return chats;
-    } catch (err) {
-      console.error("ChatRepository getChats catch-all:", err);
-      return [];
-    }
-  },
-
-  async getChat(chatId: string): Promise<BackendChatSession | null> {
-    try {
-      try {
-        const docSnap = await db.collection('chats').doc(chatId).get();
-        if (docSnap.exists) {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            title: data.title || 'Inquiry',
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-            userId: data.userId
-          };
-        }
-      } catch (dbErr) {
-        console.error(`FirestoreAdmin getChat(${chatId}) failed, attempting memory lookup:`, dbErr);
-        const memChat = inMemoryChats.get(chatId);
-        if (memChat) return { ...memChat };
-      }
-      return null;
-    } catch (err) {
-      console.error(`ChatRepository getChat(${chatId}) error:`, err);
+  /**
+   * Retrieves a single chat session document after validating tenant & user ownership.
+   */
+  async getChat(chatId: string, userId: string, tenantId: string): Promise<BackendChatSession | null> {
+    const docSnap = await db.collection('chats').doc(chatId).get();
+    if (!docSnap.exists) return null;
+    const data = docSnap.data();
+    if (data?.userId !== userId || data?.tenantId !== tenantId) {
       return null;
     }
+    if (data?.deletedAt) {
+      return null;
+    }
+    return {
+      id: docSnap.id,
+      title: data.title || 'Inquiry',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      userId: data.userId,
+      tenantId: data.tenantId,
+      deletedAt: data.deletedAt || null,
+      deletedBy: data.deletedBy || null
+    };
   },
 
-  async addMessage(chatId: string, role: 'user' | 'model', text: string): Promise<void> {
-    try {
-      const now = new Date().toISOString();
-      const messageDoc: BackendChatMessage = {
-        role,
-        text,
-        timestamp: now
-      };
-
-      try {
-        await db.collection('chats').doc(chatId).collection('messages').add(messageDoc);
-        await db.collection('chats').doc(chatId).update({ updatedAt: now });
-      } catch (dbErr) {
-        console.error(`FirestoreAdmin addMessage for chat ${chatId} failed, caching to memory:`, dbErr);
-        
-        let memMsgs = inMemoryMessages.get(chatId);
-        if (!memMsgs) {
-          memMsgs = [];
-          inMemoryMessages.set(chatId, memMsgs);
-        }
-        memMsgs.push(messageDoc);
-
-        const memChat = inMemoryChats.get(chatId);
-        if (memChat) {
-          memChat.updatedAt = now;
-        }
-      }
-    } catch (err) {
-      console.error("ChatRepository addMessage critical error:", err);
+  /**
+   * Appends an individual message as a subdocument and records an audit log.
+   */
+  async addMessage(
+    chatId: string,
+    userId: string,
+    tenantId: string,
+    role: 'user' | 'model',
+    text: string
+  ): Promise<void> {
+    const chatRef = db.collection('chats').doc(chatId);
+    const now = new Date().toISOString();
+    
+    // Validate ownership before insertion
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) {
+      throw new Error(`Chat session ${chatId} does not exist.`);
     }
+    const data = docSnap.data();
+    if (data?.userId !== userId || data?.tenantId !== tenantId) {
+      throw new Error('Unauthorized message attachment.');
+    }
+
+    const messageDoc: BackendChatMessage = {
+      role,
+      text,
+      timestamp: now
+    };
+
+    await chatRef.collection('messages').add(messageDoc);
+    await chatRef.update({ updatedAt: now });
+
+    // Audit logs entry
+    const auditAction = role === 'user' ? 'message_sent' : 'message_received';
+    await writeAuditLog(auditAction, userId, tenantId, chatId, { textLen: text.length });
   },
 
-  async getMessages(chatId: string): Promise<BackendChatMessage[]> {
-    try {
-      const messages: BackendChatMessage[] = [];
-      try {
-        const snapshot = await db.collection('chats').doc(chatId).collection('messages').get();
-        snapshot.forEach((docSnap: any) => {
-          const data = docSnap.data();
-          messages.push({
-            id: docSnap.id,
-            role: data.role,
-            text: data.text || '',
-            timestamp: data.timestamp
-          });
-        });
-      } catch (dbErr) {
-        console.error(`FirestoreAdmin getMessages(${chatId}) failed, using in-memory list:`, dbErr);
-        const memMsgs = inMemoryMessages.get(chatId) || [];
-        messages.push(...memMsgs.map(m => ({ ...m })));
-      }
-
-      messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      return messages;
-    } catch (err) {
-      console.error(`ChatRepository getMessages(${chatId}) error:`, err);
-      return [];
+  /**
+   * Gets all messages belonging to a specified chat session.
+   */
+  async getMessages(chatId: string, userId: string, tenantId: string): Promise<BackendChatMessage[]> {
+    // Confirm ownership
+    const chatRef = db.collection('chats').doc(chatId);
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) {
+      throw new Error('Chat session not found');
     }
+    const data = docSnap.data();
+    if (data?.userId !== userId || data?.tenantId !== tenantId) {
+      throw new Error('Unauthorized message read');
+    }
+
+    const messages: BackendChatMessage[] = [];
+    const snapshot = await chatRef.collection('messages').orderBy('timestamp', 'asc').get();
+    
+    snapshot.forEach((docSnap) => {
+      const msgData = docSnap.data();
+      messages.push({
+        id: docSnap.id,
+        role: msgData.role,
+        text: msgData.text || '',
+        timestamp: msgData.timestamp
+      });
+    });
+
+    return messages;
   },
 
-  async deleteChat(chatId: string): Promise<void> {
-    try {
-      try {
-        const snapshot = await db.collection('chats').doc(chatId).collection('messages').get();
-        const batch = db.batch();
-        snapshot.forEach((docSnap: any) => {
-          batch.delete(docSnap.ref);
-        });
-        batch.delete(db.collection('chats').doc(chatId));
-        await batch.commit();
-      } catch (dbErr) {
-        console.error(`FirestoreAdmin deleteChat(${chatId}) failed, applying database memory purge:`, dbErr);
-        inMemoryChats.delete(chatId);
-        inMemoryMessages.delete(chatId);
-      }
-    } catch (err) {
-      console.error(`ChatRepository deleteChat(${chatId}) critical error:`, err);
+  /**
+   * Performs soft-delete on the chat session document.
+   */
+  async deleteChat(chatId: string, userId: string, tenantId: string): Promise<void> {
+    const chatRef = db.collection('chats').doc(chatId);
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) return;
+    const data = docSnap.data();
+    if (data?.userId !== userId || data?.tenantId !== tenantId) {
+      throw new Error('Unauthorized chat purging request');
     }
+
+    const now = new Date().toISOString();
+    await chatRef.update({
+      deletedAt: now,
+      deletedBy: userId
+    });
+
+    await writeAuditLog('chat_deleted', userId, tenantId, chatId, { softDelete: true });
   }
 };

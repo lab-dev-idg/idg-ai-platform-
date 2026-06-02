@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { useSettingsStore } from './settingsStore';
 import { useAuthStore } from './authStore';
+import { auth } from '@/services/firebase';
 
 export interface ChatMessage {
   id?: string;
@@ -29,6 +30,8 @@ interface ChatState {
   input: string;
   isLoading: boolean;
   selectedMessage: ChatMessage | null;
+  hasMore: boolean;
+  searchTerm: string;
   
   // Actions
   setInput: (input: string) => void;
@@ -36,8 +39,9 @@ interface ChatState {
   addMessage: (message: ChatMessage) => void;
   setIsLoading: (isLoading: boolean) => void;
   setSelectedMessage: (message: ChatMessage | null) => void;
+  setSearchTerm: (search: string) => Promise<void>;
   createNewChat: () => void;
-  loadChats: () => Promise<void>;
+  loadChats: (isLoadMore?: boolean) => Promise<void>;
   selectChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
   handleSend: (text?: string) => Promise<void>;
@@ -54,6 +58,34 @@ const getDefaultGreeting = (): string => {
   return 'بەخێربێیت بۆ بوابة العراق الرقمية (IDG Gateway). چۆن دەتوانم یارمەتیت بدەم لە کاروباری گومرگ و دەروازە نیشتمانییەکاندا؟';
 };
 
+// Secures request headers with validated user token
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const user = useAuthStore.getState().user;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+
+  if (user) {
+    if ('isDemo' in user && user.isDemo) {
+      headers['Authorization'] = `Bearer demo-${user.uid}`;
+    } else {
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          headers['Authorization'] = `Bearer ${token}`;
+        } catch (e) {
+          console.warn("Failed to acquire Firebase ID Token, using container fallback:", e);
+          headers['Authorization'] = `Bearer demo-${user.uid}`;
+        }
+      } else {
+        headers['Authorization'] = `Bearer demo-${user.uid}`;
+      }
+    }
+  }
+  return headers;
+};
+
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
     {
@@ -66,12 +98,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
   input: '',
   isLoading: false,
   selectedMessage: null,
+  hasMore: false,
+  searchTerm: '',
 
   setInput: (input) => set({ input }),
   setMessages: (messages) => set({ messages }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   setIsLoading: (isLoading) => set({ isLoading }),
   setSelectedMessage: (message) => set({ selectedMessage: message }),
+
+  setSearchTerm: async (search) => {
+    set({ searchTerm: search });
+    await get().loadChats(false);
+  },
 
   /**
    * Resets the active chat session to start a brand new conversation
@@ -90,15 +129,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   /**
-   * Loads all historical chats belonging to the active user
+   * Loads historical chats belonging to the active user with pagination and search
    */
-  loadChats: async () => {
+  loadChats: async (isLoadMore = false) => {
     try {
-      const userId = useAuthStore.getState().user?.uid || 'guest_user';
-      const response = await fetch(`/api/chats?userId=${userId}`);
+      const { chats, searchTerm } = get();
+      const limitVal = 15;
+      const cursor = isLoadMore && chats.length > 0 ? chats[chats.length - 1].id : undefined;
+
+      let url = `/api/chats?limit=${limitVal}`;
+      if (searchTerm) {
+        url += `&search=${encodeURIComponent(searchTerm)}`;
+      }
+      if (cursor) {
+        url += `&cursor=${encodeURIComponent(cursor)}`;
+      }
+
+      const headers = await getAuthHeaders();
+      const response = await fetch(url, { headers });
       if (response.ok) {
-        const chatsList = await response.json();
-        set({ chats: chatsList });
+        const data = await response.json();
+        const newChats: ChatSession[] = data.chats || [];
+        const hasMoreVal: boolean = !!data.hasMore;
+
+        if (isLoadMore) {
+          set({
+            chats: [...chats, ...newChats],
+            hasMore: hasMoreVal
+          });
+        } else {
+          set({
+            chats: newChats,
+            hasMore: hasMoreVal
+          });
+        }
       }
     } catch (err) {
       console.error("Zustand chatStore loadChats failure:", err);
@@ -111,7 +175,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   selectChat: async (chatId: string) => {
     set({ isLoading: true, activeChatId: chatId });
     try {
-      const response = await fetch(`/api/chat/${chatId}`);
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/chat/${chatId}`, { headers });
       if (response.ok) {
         const detail = await response.json();
         const activeMessages: ChatMessage[] = detail.messages || [];
@@ -145,8 +210,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
    */
   deleteChat: async (chatId: string) => {
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/chat/${chatId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       if (response.ok) {
         // Refresh local listings
@@ -185,10 +252,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ? 'Active Customs Workspace (Calculations and Border Gateway Regulation)' 
         : 'General Logistics Inquiries';
 
-      const userId = useAuthStore.getState().user?.uid || 'guest_user';
-
       const activeContext = {
-        userId,
         language: lang,
         currentModule,
         customsWorkflowState,
@@ -200,10 +264,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       };
 
+      const headers = await getAuthHeaders();
+
       // 2. Perform REST API invocation to single orchestrator entry-point
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ 
           message: messageText,
           chatId: activeChatId || undefined,
