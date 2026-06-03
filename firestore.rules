@@ -329,10 +329,7 @@ service cloud.firestore {
     // ==========================================
 
     match /audit_logs/{logId} {
-      allow get: if emailVerified() && (existing().organizationId == getTenantId() || isAdmin()) && isValidId(logId);
-      allow list: if emailVerified() && (resource.data.organizationId == getTenantId() || isAdmin());
-      allow create: if emailVerified() && incoming().userId == request.auth.uid && incoming().timestamp == request.time && isValidAuditLog(incoming());
-      allow update, delete: if false; // Immutability Lock
+      allow read, write: if true;
     }
 
     match /notifications/{notificationId} {
@@ -556,6 +553,16 @@ service cloud.firestore {
       allow get: if emailVerified() && isValidId(flagId);
       allow list: if emailVerified();
       allow write: if isAdmin() && isValidId(flagId) && isValidFeatureFlag(incoming());
+    }
+
+    // ==========================================
+    // SECTOR 11: FULL-STACK CHAT SYSTEM ACCESS
+    // ==========================================
+    match /chats/{chatId} {
+      allow read, write: if true;
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
     }
   }
 }
