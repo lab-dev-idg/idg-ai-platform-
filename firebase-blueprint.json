@@ -26,6 +26,19 @@
       },
       "required": ["uid", "email", "organizationId", "roleId", "createdAt"]
     },
+    "UserShipment": {
+      "title": "UserShipment",
+      "description": "User's personal tracking shipment record",
+      "type": "object",
+      "properties": {
+        "trackingNumber": { "type": "string", "description": "Tracking number" },
+        "status": { "type": "string", "description": "Current tracking status text" },
+        "estimatedDelivery": { "type": "string", "description": "Estimated delivery date text" },
+        "userId": { "type": "string", "description": "Owning user identifier" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update timestamp" }
+      },
+      "required": ["trackingNumber", "status", "estimatedDelivery", "userId"]
+    },
     "Role": {
       "title": "Role",
       "description": "Role-Based Access Control definition",
@@ -430,6 +443,10 @@
     "/users/{userId}": {
       "schema": "User",
       "description": "Main user account configuration partitioned by user system credentials"
+    },
+    "/users/{userId}/shipments/{shipmentId}": {
+      "schema": "UserShipment",
+      "description": "Subcollection storing personal shipments tracked by each user"
     },
     "/roles/{roleId}": {
       "schema": "Role",

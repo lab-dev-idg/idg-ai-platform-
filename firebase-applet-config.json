@@ -1,10 +1,10 @@
 {
-  "projectId": "idg-core-iq-443a9",
-  "appId": "1:626013219179:web:9c8af306127bd01597042e",
-  "apiKey": "AIzaSyByvDpaeCA0ClX8CcBjn_rkbtc40cK-xmI",
-  "authDomain": "idg-core-iq-443a9.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-9cb05948-92d9-4d91-afbc-d85e72bace64",
-  "storageBucket": "idg-core-iq-443a9.firebasestorage.app",
-  "messagingSenderId": "626013219179",
-  "measurementId": ""
+  "projectId": "idg-core-iq",
+  "appId": "1:483943647262:web:8e1b75d8f699e33385c60f",
+  "apiKey": "AIzaSyDMBCK6L1rI917P-cM3u2oa3BnNNfo4a74",
+  "authDomain": "idg-core-iq.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "idg-core-iq.firebasestorage.app",
+  "messagingSenderId": "483943647262",
+  "measurementId": "G-7QLDEHL25H"
 }

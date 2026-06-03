@@ -71,6 +71,13 @@ service cloud.firestore {
         && data.roleId is string && data.roleId.size() <= 128;
     }
 
+    function isValidUserShipment(data) {
+      return data.trackingNumber is string && data.trackingNumber.size() <= 128
+        && data.status is string && data.status.size() <= 128
+        && data.estimatedDelivery is string && data.estimatedDelivery.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
     function isValidRole(data) {
       return data.id is string && data.id.size() <= 128
         && data.name is string && data.name.size() > 0 && data.name.size() <= 256
@@ -307,6 +314,13 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidId(userId) && incoming().createdAt == request.time && isValidUser(incoming());
       allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId) && incoming().createdAt == existing().createdAt && isValidUser(incoming()) && (isOwner(userId) ? incoming().diff(existing()).affectedKeys().hasOnly(['displayName']) : true);
       allow delete: if isAdmin() && isValidId(userId);
+
+      match /shipments/{shipmentId} {
+        allow get: if isOwner(userId) && isValidId(shipmentId);
+        allow list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(shipmentId) && incoming().updatedAt == request.time && isValidUserShipment(incoming());
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(shipmentId);
+      }
     }
 
     // ==========================================

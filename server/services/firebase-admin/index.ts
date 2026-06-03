@@ -15,19 +15,7 @@ try {
 
 // Prefer explicit Firebase/Firestore Project ID configured for this applet
 const getSafeProjectId = (): string => {
-  const configId = firebaseConfig.projectId;
-  if (configId && configId !== 'dg-core-iq' && configId !== 'gen-lang-client-0647247129') return configId;
-  
-  const envId = process.env.VITE_FIREBASE_PROJECT_ID;
-  if (envId && envId !== 'dg-core-iq' && envId !== 'gen-lang-client-0647247129') return envId;
-
-  const gcpProj = process.env.GOOGLE_CLOUD_PROJECT;
-  if (gcpProj && gcpProj !== 'dg-core-iq' && gcpProj !== 'gen-lang-client-0647247129') return gcpProj;
-
-  const gcloudProj = process.env.GCLOUD_PROJECT;
-  if (gcloudProj && gcloudProj !== 'dg-core-iq' && gcloudProj !== 'gen-lang-client-0647247129') return gcloudProj;
-
-  return 'idg-core-iq-443a9';
+  return firebaseConfig.projectId || process.env.VITE_FIREBASE_PROJECT_ID || 'idg-core-iq';
 };
 
 const projectId = getSafeProjectId();
@@ -40,7 +28,7 @@ const dbId = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.f
 
 let dbInstance: FirebaseFirestore.Firestore;
 try {
-  if (dbId && dbId !== 'default') {
+  if (dbId && dbId !== 'default' && dbId !== '(default)') {
     dbInstance = getFirestore(appInstance, dbId);
   } else {
     dbInstance = getFirestore(appInstance);

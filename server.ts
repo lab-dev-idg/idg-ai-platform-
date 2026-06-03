@@ -31,11 +31,7 @@ async function startServer() {
       }
       const fbKey = fc?.apiKey || process.env.VITE_FIREBASE_API_KEY || "";
       const getSafeProj = () => {
-        const pId = fc?.projectId;
-        if (pId && pId !== "dg-core-iq" && pId !== "gen-lang-client-0647247129") return pId;
-        const eId = process.env.VITE_FIREBASE_PROJECT_ID;
-        if (eId && eId !== "dg-core-iq" && eId !== "gen-lang-client-0647247129") return eId;
-        return "idg-core-iq-443a9";
+        return fc?.projectId || process.env.VITE_FIREBASE_PROJECT_ID || "idg-core-iq";
       };
       const fbProj = getSafeProj();
       if (!fbKey || !fbProj) {

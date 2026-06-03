@@ -26,32 +26,25 @@ try {
   console.warn("Failed to load firebase-applet-config.json in backend firestore service, using local env:", err);
 }
 
-const getSafeProjectId = (): string => {
-  const configId = firebaseConfig.projectId;
-  if (configId && configId !== 'dg-core-iq' && configId !== 'gen-lang-client-0647247129') return configId;
-  
-  const envId = process.env.VITE_FIREBASE_PROJECT_ID;
-  if (envId && envId !== 'dg-core-iq' && envId !== 'gen-lang-client-0647247129') return envId;
-
-  return 'idg-core-iq-443a9';
-};
-
-const resolvedProjectId = getSafeProjectId();
-
 const safeConfig = {
   apiKey: firebaseConfig.apiKey || process.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: resolvedProjectId === 'idg-core-iq-443a9' ? 'idg-core-iq-443a9.firebaseapp.com' : (firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || ''),
-  projectId: resolvedProjectId,
-  storageBucket: resolvedProjectId === 'idg-core-iq-443a9' ? 'idg-core-iq-443a9.firebasestorage.app' : (firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || ''),
+  authDomain: firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || 'idg-core-iq.firebaseapp.com',
+  projectId: firebaseConfig.projectId || process.env.VITE_FIREBASE_PROJECT_ID || 'idg-core-iq',
+  storageBucket: firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || 'idg-core-iq.firebasestorage.app',
   messagingSenderId: firebaseConfig.messagingSenderId || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: firebaseConfig.appId || process.env.VITE_FIREBASE_APP_ID || '',
   measurementId: firebaseConfig.measurementId || process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
-  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 'default'
+  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || undefined
 };
+
+// If the database ID is "(default)" or "default", pass undefined to use default
+const resolvedDbId = (safeConfig.firestoreDatabaseId === '(default)' || safeConfig.firestoreDatabaseId === 'default' || !safeConfig.firestoreDatabaseId)
+  ? undefined 
+  : safeConfig.firestoreDatabaseId;
 
 // Initialize Firebase App for Server usage
 const app = getApps().length === 0 ? initializeApp(safeConfig) : getApp();
-export const db = getFirestore(app, safeConfig.firestoreDatabaseId || undefined);
+export const db = getFirestore(app, resolvedDbId);
 
 export interface ChatSession {
   id?: string;
