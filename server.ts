@@ -1,6 +1,32 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+
+// Load environment variables manually from .env/ .env.example before import routers/services
+try {
+  const envPath = path.join(process.cwd(), '.env');
+  const envExamplePath = path.join(process.cwd(), '.env.example');
+  const activePath = fs.existsSync(envPath) ? envPath : fs.existsSync(envExamplePath) ? envExamplePath : null;
+  if (activePath) {
+    const lines = fs.readFileSync(activePath, 'utf8').split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const index = trimmed.indexOf('=');
+        const key = trimmed.substring(0, index).trim();
+        const value = trimmed.substring(index + 1).trim();
+        if (key && value) {
+          if (!process.env[key] || process.env[key]?.includes('YOUR_') || process.env[key] === 'dg-core-iq') {
+            process.env[key] = value;
+          }
+        }
+      }
+    }
+  }
+} catch (e) {
+  console.warn("Failed to load environment from file:", e);
+}
+
 import { createServer as createViteServer } from "vite";
 
 import { chatRouter } from "./server/routes/chat";
