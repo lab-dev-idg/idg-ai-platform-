@@ -27,14 +27,16 @@ try {
 }
 
 const safeConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || '',
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '',
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || '',
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
-  appId: process.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || '',
-  firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || 'default'
+  apiKey: firebaseConfig.apiKey || process.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: (firebaseConfig.projectId && firebaseConfig.projectId !== 'dg-core-iq')
+    ? firebaseConfig.projectId
+    : (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_PROJECT_ID !== 'dg-core-iq' ? process.env.VITE_FIREBASE_PROJECT_ID : ''),
+  storageBucket: firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: firebaseConfig.messagingSenderId || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: firebaseConfig.appId || process.env.VITE_FIREBASE_APP_ID || '',
+  measurementId: firebaseConfig.measurementId || process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 'default'
 };
 
 // Initialize Firebase App for Server usage

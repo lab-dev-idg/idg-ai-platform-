@@ -14,11 +14,23 @@ try {
 }
 
 // Prefer explicit Firebase/Firestore Project ID configured for this applet
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 
-                  firebaseConfig.projectId || 
-                  process.env.GOOGLE_CLOUD_PROJECT || 
-                  process.env.GCLOUD_PROJECT || 
-                  '';
+const getSafeProjectId = (): string => {
+  const configId = firebaseConfig.projectId;
+  if (configId && configId !== 'dg-core-iq') return configId;
+  
+  const envId = process.env.VITE_FIREBASE_PROJECT_ID;
+  if (envId && envId !== 'dg-core-iq') return envId;
+
+  const gcpProj = process.env.GOOGLE_CLOUD_PROJECT;
+  if (gcpProj && gcpProj !== 'dg-core-iq') return gcpProj;
+
+  const gcloudProj = process.env.GCLOUD_PROJECT;
+  if (gcloudProj && gcloudProj !== 'dg-core-iq') return gcloudProj;
+
+  return '';
+};
+
+const projectId = getSafeProjectId();
 
 const appInstance = getApps().length === 0 
   ? initializeApp({ projectId: projectId || undefined })

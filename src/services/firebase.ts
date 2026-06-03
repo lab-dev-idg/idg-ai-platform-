@@ -6,14 +6,16 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const env = (import.meta as any).env || {};
 
 const safeConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || '',
-  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '',
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || '',
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
-  appId: env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
-  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || '',
-  firestoreDatabaseId: env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || 'default'
+  apiKey: firebaseConfig.apiKey || env.VITE_FIREBASE_API_KEY || '',
+  authDomain: firebaseConfig.authDomain || env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: (firebaseConfig.projectId && firebaseConfig.projectId !== 'dg-core-iq')
+    ? firebaseConfig.projectId
+    : (env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_PROJECT_ID !== 'dg-core-iq' ? env.VITE_FIREBASE_PROJECT_ID : ''),
+  storageBucket: firebaseConfig.storageBucket || env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: firebaseConfig.messagingSenderId || env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: firebaseConfig.appId || env.VITE_FIREBASE_APP_ID || '',
+  measurementId: firebaseConfig.measurementId || env.VITE_FIREBASE_MEASUREMENT_ID || '',
+  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 'default'
 };
 
 const app = getApps().length === 0 ? initializeApp(safeConfig) : getApp();

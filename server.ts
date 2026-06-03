@@ -29,8 +29,10 @@ async function startServer() {
       if (fs.existsSync(fcPath)) {
         fc = JSON.parse(fs.readFileSync(fcPath, 'utf8'));
       }
-      const fbKey = process.env.VITE_FIREBASE_API_KEY || fc?.apiKey || "";
-      const fbProj = process.env.VITE_FIREBASE_PROJECT_ID || fc?.projectId || "";
+      const fbKey = fc?.apiKey || process.env.VITE_FIREBASE_API_KEY || "";
+      const fbProj = (fc?.projectId && fc?.projectId !== "dg-core-iq") 
+        ? fc.projectId 
+        : (process.env.VITE_FIREBASE_PROJECT_ID !== "dg-core-iq" ? process.env.VITE_FIREBASE_PROJECT_ID : "") || "";
       if (!fbKey || !fbProj) {
         firebaseStatus = "Missing";
       } else if (fbKey.includes("YOUR_") || fbKey.length < 10) {
