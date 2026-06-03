@@ -26,13 +26,23 @@ try {
   console.warn("Failed to load firebase-applet-config.json in backend firestore service, using local env:", err);
 }
 
+const getSafeProjectId = (): string => {
+  const configId = firebaseConfig.projectId;
+  if (configId && configId !== 'dg-core-iq' && configId !== 'gen-lang-client-0647247129') return configId;
+  
+  const envId = process.env.VITE_FIREBASE_PROJECT_ID;
+  if (envId && envId !== 'dg-core-iq' && envId !== 'gen-lang-client-0647247129') return envId;
+
+  return 'idg-core-iq-443a9';
+};
+
+const resolvedProjectId = getSafeProjectId();
+
 const safeConfig = {
   apiKey: firebaseConfig.apiKey || process.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: (firebaseConfig.projectId && firebaseConfig.projectId !== 'dg-core-iq')
-    ? firebaseConfig.projectId
-    : (process.env.VITE_FIREBASE_PROJECT_ID && process.env.VITE_FIREBASE_PROJECT_ID !== 'dg-core-iq' ? process.env.VITE_FIREBASE_PROJECT_ID : ''),
-  storageBucket: firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  authDomain: resolvedProjectId === 'idg-core-iq-443a9' ? 'idg-core-iq-443a9.firebaseapp.com' : (firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || ''),
+  projectId: resolvedProjectId,
+  storageBucket: resolvedProjectId === 'idg-core-iq-443a9' ? 'idg-core-iq-443a9.firebasestorage.app' : (firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || ''),
   messagingSenderId: firebaseConfig.messagingSenderId || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: firebaseConfig.appId || process.env.VITE_FIREBASE_APP_ID || '',
   measurementId: firebaseConfig.measurementId || process.env.VITE_FIREBASE_MEASUREMENT_ID || '',

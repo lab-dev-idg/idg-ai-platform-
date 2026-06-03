@@ -30,9 +30,14 @@ async function startServer() {
         fc = JSON.parse(fs.readFileSync(fcPath, 'utf8'));
       }
       const fbKey = fc?.apiKey || process.env.VITE_FIREBASE_API_KEY || "";
-      const fbProj = (fc?.projectId && fc?.projectId !== "dg-core-iq") 
-        ? fc.projectId 
-        : (process.env.VITE_FIREBASE_PROJECT_ID !== "dg-core-iq" ? process.env.VITE_FIREBASE_PROJECT_ID : "") || "";
+      const getSafeProj = () => {
+        const pId = fc?.projectId;
+        if (pId && pId !== "dg-core-iq" && pId !== "gen-lang-client-0647247129") return pId;
+        const eId = process.env.VITE_FIREBASE_PROJECT_ID;
+        if (eId && eId !== "dg-core-iq" && eId !== "gen-lang-client-0647247129") return eId;
+        return "idg-core-iq-443a9";
+      };
+      const fbProj = getSafeProj();
       if (!fbKey || !fbProj) {
         firebaseStatus = "Missing";
       } else if (fbKey.includes("YOUR_") || fbKey.length < 10) {

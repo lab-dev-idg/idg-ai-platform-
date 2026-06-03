@@ -16,18 +16,18 @@ try {
 // Prefer explicit Firebase/Firestore Project ID configured for this applet
 const getSafeProjectId = (): string => {
   const configId = firebaseConfig.projectId;
-  if (configId && configId !== 'dg-core-iq') return configId;
+  if (configId && configId !== 'dg-core-iq' && configId !== 'gen-lang-client-0647247129') return configId;
   
   const envId = process.env.VITE_FIREBASE_PROJECT_ID;
-  if (envId && envId !== 'dg-core-iq') return envId;
+  if (envId && envId !== 'dg-core-iq' && envId !== 'gen-lang-client-0647247129') return envId;
 
   const gcpProj = process.env.GOOGLE_CLOUD_PROJECT;
-  if (gcpProj && gcpProj !== 'dg-core-iq') return gcpProj;
+  if (gcpProj && gcpProj !== 'dg-core-iq' && gcpProj !== 'gen-lang-client-0647247129') return gcpProj;
 
   const gcloudProj = process.env.GCLOUD_PROJECT;
-  if (gcloudProj && gcloudProj !== 'dg-core-iq') return gcloudProj;
+  if (gcloudProj && gcloudProj !== 'dg-core-iq' && gcloudProj !== 'gen-lang-client-0647247129') return gcloudProj;
 
-  return '';
+  return 'idg-core-iq-443a9';
 };
 
 const projectId = getSafeProjectId();
