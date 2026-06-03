@@ -578,5 +578,42 @@ service cloud.firestore {
         allow read, write: if true;
       }
     }
+
+    // ==========================================
+    // SECTOR 12: AI BRAIN SIMULATION & OBSERVABILITY TELEMETRY
+    // ==========================================
+    match /validation_audits/{id} {
+      allow read, write: if true;
+    }
+    match /command_audits/{id} {
+      allow read, write: if true;
+    }
+    match /system_alerts/{id} {
+      allow read, write: if true;
+    }
+    match /alert_actions/{id} {
+      allow read, write: if true;
+    }
+    match /deployment_log_events/{id} {
+      allow read, write: if true;
+    }
+    match /chaos_simulations/{id} {
+      allow read, write: if true;
+    }
+    match /production_telemetry/{id} {
+      allow read, write: if true;
+    }
+    match /sovereign_intrusion_alerts/{id} {
+      allow read, write: if true;
+    }
+    match /feedback_logs/{id} {
+      allow read, write: if true;
+    }
+    match /learning_audits/{id} {
+      allow read, write: if true;
+    }
+    match /learning_memories/{id} {
+      allow read, write: if true;
+    }
   }
 }

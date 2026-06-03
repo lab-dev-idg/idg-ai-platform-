@@ -1,19 +1,4 @@
-import { db } from '../firestore';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  startAfter, 
-  runTransaction, 
-  updateDoc
-} from 'firebase/firestore';
+import { db } from '../firebase-admin';
 
 export interface BackendChatSession {
   id: string;
@@ -51,7 +36,7 @@ async function writeAuditLog(
 ): Promise<void> {
   try {
     const now = new Date().toISOString();
-    await addDoc(collection(db, 'audit_logs'), {
+    await db.collection('audit_logs').add({
       action,
       userId,
       tenantId,
@@ -80,7 +65,7 @@ export const ChatRepository = {
       updatedAt: now
     };
 
-    await setDoc(doc(db, 'chats', id), chatDoc);
+    await db.collection('chats').doc(id).set(chatDoc);
     await writeAuditLog('chat_created', userId, tenantId, id, { title });
     return id;
   },
@@ -90,11 +75,11 @@ export const ChatRepository = {
    */
   async updateChatTitle(chatId: string, userId: string, tenantId: string, title: string): Promise<void> {
     const now = new Date().toISOString();
-    const chatRef = doc(db, 'chats', chatId);
+    const chatRef = db.collection('chats').doc(chatId);
     
-    await runTransaction(db, async (transaction) => {
+    await db.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(chatRef);
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         throw new Error('Chat session not found');
       }
       const data = docSnap.data();
@@ -118,25 +103,23 @@ export const ChatRepository = {
     try {
       let startDoc: any = null;
       if (startAfterId) {
-        startDoc = await getDoc(doc(db, 'chats', startAfterId));
+        startDoc = await db.collection('chats').doc(startAfterId).get();
       }
 
-      let q = query(
-        collection(db, 'chats'),
-        where('userId', '==', userId),
-        where('tenantId', '==', tenantId),
-        orderBy('updatedAt', 'desc')
-      );
+      let q: any = db.collection('chats')
+        .where('userId', '==', userId)
+        .where('tenantId', '==', tenantId)
+        .orderBy('updatedAt', 'desc');
 
-      if (startDoc && startDoc.exists()) {
-        q = query(q, startAfter(startDoc));
+      if (startDoc && startDoc.exists) {
+        q = q.startAfter(startDoc);
       }
 
       // Fetch a buffer to allow soft-delete filtering and search filtering without depleting the requested page size
-      const snapshot = await getDocs(query(q, limit(limitVal * 2 + 1)));
+      const snapshot = await q.limit(limitVal * 2 + 1).get();
       const chatsList: BackendChatSession[] = [];
 
-      snapshot.forEach((docSnap) => {
+      snapshot.forEach((docSnap: any) => {
         const data = docSnap.data();
         if (data.deletedAt) {
           return;
@@ -174,8 +157,8 @@ export const ChatRepository = {
    */
   async getChat(chatId: string, userId: string, tenantId: string): Promise<BackendChatSession | null> {
     try {
-      const docSnap = await getDoc(doc(db, 'chats', chatId));
-      if (!docSnap.exists()) return null;
+      const docSnap = await db.collection('chats').doc(chatId).get();
+      if (!docSnap.exists) return null;
       const data = docSnap.data();
       if (data?.userId !== userId || data?.tenantId !== tenantId) {
         return null;
@@ -209,12 +192,12 @@ export const ChatRepository = {
     role: 'user' | 'model',
     text: string
   ): Promise<void> {
-    const chatRef = doc(db, 'chats', chatId);
+    const chatRef = db.collection('chats').doc(chatId);
     const now = new Date().toISOString();
     
     // Validate ownership before insertion
-    const docSnap = await getDoc(chatRef);
-    if (!docSnap.exists()) {
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) {
       throw new Error(`Chat session ${chatId} does not exist.`);
     }
     const data = docSnap.data();
@@ -228,8 +211,8 @@ export const ChatRepository = {
       timestamp: now
     };
 
-    await addDoc(collection(db, 'chats', chatId, 'messages'), messageDoc);
-    await updateDoc(chatRef, { updatedAt: now });
+    await chatRef.collection('messages').add(messageDoc);
+    await chatRef.update({ updatedAt: now });
 
     // Audit logs entry
     const auditAction = role === 'user' ? 'message_sent' : 'message_received';
@@ -241,9 +224,9 @@ export const ChatRepository = {
    */
   async getMessages(chatId: string, userId: string, tenantId: string): Promise<BackendChatMessage[]> {
     // Confirm ownership
-    const chatRef = doc(db, 'chats', chatId);
-    const docSnap = await getDoc(chatRef);
-    if (!docSnap.exists()) {
+    const chatRef = db.collection('chats').doc(chatId);
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) {
       throw new Error('Chat session not found');
     }
     const data = docSnap.data();
@@ -252,11 +235,11 @@ export const ChatRepository = {
     }
 
     const messages: BackendChatMessage[] = [];
-    const messagesCol = collection(db, 'chats', chatId, 'messages');
-    const q = query(messagesCol, orderBy('timestamp', 'asc'));
-    const snapshot = await getDocs(q);
+    const messagesCol = chatRef.collection('messages');
+    const q = messagesCol.orderBy('timestamp', 'asc');
+    const snapshot = await q.get();
     
-    snapshot.forEach((docSnap) => {
+    snapshot.forEach((docSnap: any) => {
       const msgData = docSnap.data();
       messages.push({
         id: docSnap.id,
@@ -273,16 +256,16 @@ export const ChatRepository = {
    * Performs soft-delete on the chat session document.
    */
   async deleteChat(chatId: string, userId: string, tenantId: string): Promise<void> {
-    const chatRef = doc(db, 'chats', chatId);
-    const docSnap = await getDoc(chatRef);
-    if (!docSnap.exists()) return;
+    const chatRef = db.collection('chats').doc(chatId);
+    const docSnap = await chatRef.get();
+    if (!docSnap.exists) return;
     const data = docSnap.data();
     if (data?.userId !== userId || data?.tenantId !== tenantId) {
       throw new Error('Unauthorized chat purging request');
     }
 
     const now = new Date().toISOString();
-    await updateDoc(chatRef, {
+    await chatRef.update({
       deletedAt: now,
       deletedBy: userId
     });

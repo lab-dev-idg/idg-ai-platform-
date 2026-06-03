@@ -4,9 +4,9 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAiClient(): GoogleGenAI {
   if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.YOUR_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is not defined on the server side.");
+      throw new Error("GEMINI_API_KEY or YOUR_API_KEY environment variable is not defined on the server side.");
     }
     aiInstance = new GoogleGenAI({
       apiKey: apiKey,
