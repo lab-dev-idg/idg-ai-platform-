@@ -177,7 +177,7 @@ export function WorkspaceHeader({ lang, setLang, t, setIsMobileSidebarOpen }: Wo
           {/* Interactive notification card dropdown */}
           {isNotificationsOpen && (
             <div 
-              className="absolute top-11 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-50 font-sans text-xs intense-shadow"
+              className="absolute top-11 w-[calc(100vw-32px)] sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-50 font-sans text-xs intense-shadow"
               style={{ right: isRtl ? 0 : "auto", left: isRtl ? "auto" : 0 }}
             >
               <div className="flex items-center justify-between border-b pb-2 mb-2 border-slate-100 dark:border-slate-800 select-none">

@@ -1479,7 +1479,7 @@ export function GovernmentShowcase() {
                   <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800 text-right font-sans space-y-3">
                     <span className="text-[11px] text-red-400 font-bold uppercase block">{t.timelineLabel}</span>
                     
-                    <div className="grid grid-cols-5 gap-2 relative">
+                    <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2 relative">
                       {complianceCaseData.stages.map((stg) => {
                         const isCurrent = amlDecision ? stg.id === 5 : stg.id === 3;
                         const isPast = stg.id < (amlDecision ? 5 : 3);

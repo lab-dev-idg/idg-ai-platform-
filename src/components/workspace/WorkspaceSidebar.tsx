@@ -277,7 +277,7 @@ export function WorkspaceSidebar({
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="fixed inset-0 bg-black z-45 md:hidden"
+              className="fixed inset-0 bg-black z-[45] md:hidden"
             />
             <motion.aside
               initial={{ x: isRtl ? "100%" : "-100%" }}

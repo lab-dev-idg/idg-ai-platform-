@@ -66,7 +66,7 @@ export function WorkspaceContent({ lang, setLang }: WorkspaceContentProps) {
   }, []);
 
   return (
-    <main className="flex-1 min-h-0 overflow-y-auto px-6 py-6 scrollbar-thin dark:scrollbar-slate-800">
+    <main className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 scrollbar-thin dark:scrollbar-slate-800">
       <div className="max-w-7xl mx-auto w-full h-full flex flex-col gap-6">
 
         {/* DYNAMIC CONTENT SWITCHER */}
