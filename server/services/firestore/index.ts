@@ -27,14 +27,14 @@ try {
 }
 
 const safeConfig = {
-  apiKey: firebaseConfig.apiKey || process.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: firebaseConfig.authDomain || process.env.VITE_FIREBASE_AUTH_DOMAIN || 'idg-core-iq.firebaseapp.com',
-  projectId: firebaseConfig.projectId || process.env.VITE_FIREBASE_PROJECT_ID || 'idg-core-iq',
-  storageBucket: firebaseConfig.storageBucket || process.env.VITE_FIREBASE_STORAGE_BUCKET || 'idg-core-iq.firebasestorage.app',
-  messagingSenderId: firebaseConfig.messagingSenderId || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: firebaseConfig.appId || process.env.VITE_FIREBASE_APP_ID || '',
-  measurementId: firebaseConfig.measurementId || process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
-  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || undefined
+  apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || 'dg-core-iq.firebaseapp.com',
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'dg-core-iq',
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || 'dg-core-iq.firebasestorage.app',
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
+  appId: process.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || '',
+  firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || undefined
 };
 
 // If the database ID is "(default)" or "default", pass undefined to use default
