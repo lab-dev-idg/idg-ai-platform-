@@ -27,8 +27,10 @@ try {
             value = value.substring(1).trim();
           }
           
-          // Let's set it in process.env, overriding old values unless the value is a dummy placeholder
-          if (!value.includes('YOUR_') && value !== '') {
+          // Let's set it in process.env, only if not already set or is currently empty/placeholder
+          const existingVal = process.env[key];
+          const isExistingEmptyOrPlaceholder = !existingVal || existingVal.includes('YOUR_') || existingVal === '';
+          if (!value.includes('YOUR_') && value !== '' && isExistingEmptyOrPlaceholder) {
             process.env[key] = value;
           }
         }

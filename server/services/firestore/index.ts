@@ -28,9 +28,9 @@ try {
 
 const safeConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || 'idg-core-iq-443a9.firebaseapp.com',
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'idg-core-iq-443a9',
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || 'idg-core-iq-443a9.firebasestorage.app',
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || 'idg-core-iq.firebaseapp.com',
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'idg-core-iq',
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || 'idg-core-iq.firebasestorage.app',
   messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
   appId: process.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
   measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || '',
