@@ -6,14 +6,14 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const env = (import.meta as any).env || {};
 
 const safeConfig = {
-  apiKey: firebaseConfig.apiKey || env.VITE_FIREBASE_API_KEY || '',
-  authDomain: firebaseConfig.authDomain || env.VITE_FIREBASE_AUTH_DOMAIN || 'idg-core-iq.firebaseapp.com',
-  projectId: firebaseConfig.projectId || env.VITE_FIREBASE_PROJECT_ID || 'idg-core-iq',
-  storageBucket: firebaseConfig.storageBucket || env.VITE_FIREBASE_STORAGE_BUCKET || 'idg-core-iq.firebasestorage.app',
-  messagingSenderId: firebaseConfig.messagingSenderId || env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: firebaseConfig.appId || env.VITE_FIREBASE_APP_ID || '',
-  measurementId: firebaseConfig.measurementId || env.VITE_FIREBASE_MEASUREMENT_ID || '',
-  firestoreDatabaseId: firebaseConfig.firestoreDatabaseId || env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || undefined
+  apiKey: env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || 'idg-core-iq-443a9.firebaseapp.com',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'idg-core-iq-443a9',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || 'idg-core-iq-443a9.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
+  appId: env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || '',
+  firestoreDatabaseId: env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || undefined
 };
 
 // If the database ID is "(default)" or "default", pass undefined to use default

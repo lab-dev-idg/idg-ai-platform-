@@ -15,7 +15,7 @@ try {
 
 // Prefer explicit Firebase/Firestore Project ID configured for this applet
 const getSafeProjectId = (): string => {
-  return firebaseConfig.projectId || process.env.VITE_FIREBASE_PROJECT_ID || 'idg-core-iq';
+  return process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'idg-core-iq-443a9';
 };
 
 const projectId = getSafeProjectId();

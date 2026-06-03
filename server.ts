@@ -14,9 +14,21 @@ try {
       if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
         const index = trimmed.indexOf('=');
         const key = trimmed.substring(0, index).trim();
-        const value = trimmed.substring(index + 1).trim();
+        let value = trimmed.substring(index + 1).trim();
         if (key && value) {
-          if (!process.env[key] || process.env[key]?.includes('YOUR_') || process.env[key] === 'dg-core-iq') {
+          // Strip leading quotes or colons if accidentally added by user
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.slice(1, -1).trim();
+          }
+          if (value.startsWith("'") && value.endsWith("'")) {
+            value = value.slice(1, -1).trim();
+          }
+          if (value.startsWith(':')) {
+            value = value.substring(1).trim();
+          }
+          
+          // Let's set it in process.env, overriding old values unless the value is a dummy placeholder
+          if (!value.includes('YOUR_') && value !== '') {
             process.env[key] = value;
           }
         }
