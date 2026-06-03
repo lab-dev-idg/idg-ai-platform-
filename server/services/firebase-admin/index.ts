@@ -13,7 +13,12 @@ try {
   console.warn("Failed to load firebase-applet-config.json in bootstrap:", err);
 }
 
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '';
+// Prefer target Google Cloud Project ID of container/environment for Admin SDK
+const projectId = process.env.GOOGLE_CLOUD_PROJECT || 
+                  process.env.GCLOUD_PROJECT || 
+                  process.env.VITE_FIREBASE_PROJECT_ID || 
+                  firebaseConfig.projectId || 
+                  '';
 
 const appInstance = getApps().length === 0 
   ? initializeApp({ projectId: projectId || undefined })
